@@ -5,6 +5,7 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
     <AssemblyName>TestPackageInstaller</AssemblyName>
     <RootNamespace>TestPackageInstaller</RootNamespace>
     <Version>1.0.0</Version>
