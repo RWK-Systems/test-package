@@ -1,0 +1,151 @@
+<Window x:Class="TestPackageApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="TestPackage" Height="650" Width="750"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F5F5">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#0078D4" Padding="20,15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="TestPackage" FontSize="22" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock Text="Installation Context Viewer" FontSize="12" Foreground="#CCE5FF" Margin="0,3,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <TextBlock x:Name="VersionText" Text="v1.0.0" Foreground="#99CCFF" FontSize="11"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="20,0">
+            <StackPanel Margin="0,5,0,20">
+
+                <!-- Execution Context -->
+                <TextBlock Style="{StaticResource SectionHeader}" Text="Execution Context"/>
+                <Border Background="White" CornerRadius="5" Padding="15" BorderBrush="#E0E0E0" BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource InfoLabel}" Text="Running As:"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" x:Name="RunningAs" Style="{StaticResource InfoValue}"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource InfoLabel}" Text="User Domain:"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" x:Name="UserDomain" Style="{StaticResource InfoValue}"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource InfoLabel}" Text="Elevated (Admin):"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" x:Name="IsElevated" Style="{StaticResource InfoValue}"/>
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Style="{StaticResource InfoLabel}" Text="Process Integrity:"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" x:Name="IntegrityLevel" Style="{StaticResource InfoValue}"/>
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" Style="{StaticResource InfoLabel}" Text="Session ID:"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" x:Name="SessionId" Style="{StaticResource InfoValue}"/>
+
+                        <TextBlock Grid.Row="5" Grid.Column="0" Style="{StaticResource InfoLabel}" Text="Machine Name:"/>
+                        <TextBlock Grid.Row="5" Grid.Column="1" x:Name="MachineName" Style="{StaticResource InfoValue}"/>
+
+                        <TextBlock Grid.Row="6" Grid.Column="0" Style="{StaticResource InfoLabel}" Text="OS Version:"/>
+                        <TextBlock Grid.Row="6" Grid.Column="1" x:Name="OSVersion" Style="{StaticResource InfoValue}"/>
+                    </Grid>
+                </Border>
+
+                <!-- Installation Details -->
+                <TextBlock Style="{StaticResource SectionHeader}" Text="Installation Details"/>
+                <Border Background="White" CornerRadius="5" Padding="15" BorderBrush="#E0E0E0" BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource InfoLabel}" Text="Install Location:"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" x:Name="InstallLocation" Style="{StaticResource InfoValue}" TextWrapping="Wrap"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource InfoLabel}" Text="Install Context:"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" x:Name="InstallContext" Style="{StaticResource InfoValue}"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource InfoLabel}" Text="Installed By:"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" x:Name="InstalledBy" Style="{StaticResource InfoValue}"/>
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Style="{StaticResource InfoLabel}" Text="Install Date:"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" x:Name="InstallDate" Style="{StaticResource InfoValue}"/>
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" Style="{StaticResource InfoLabel}" Text="Components:"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" x:Name="InstalledComponents" Style="{StaticResource InfoValue}" TextWrapping="Wrap"/>
+                    </Grid>
+                </Border>
+
+                <!-- Test Files Status -->
+                <TextBlock Style="{StaticResource SectionHeader}" Text="Test Files Status"/>
+                <Border Background="White" CornerRadius="5" Padding="15" BorderBrush="#E0E0E0" BorderThickness="1">
+                    <StackPanel x:Name="TestFilesPanel"/>
+                </Border>
+
+                <!-- Registry Status -->
+                <TextBlock Style="{StaticResource SectionHeader}" Text="Registry Entries Status"/>
+                <Border Background="White" CornerRadius="5" Padding="15" BorderBrush="#E0E0E0" BorderThickness="1">
+                    <StackPanel x:Name="RegistryPanel"/>
+                </Border>
+
+                <!-- Features Status -->
+                <TextBlock Style="{StaticResource SectionHeader}" Text="Installed Features"/>
+                <Border Background="White" CornerRadius="5" Padding="15" BorderBrush="#E0E0E0" BorderThickness="1">
+                    <StackPanel x:Name="FeaturesPanel"/>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" Background="#F0F0F0" BorderBrush="#DDD" BorderThickness="0,1,0,0" Padding="15,10">
+            <Grid>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <TextBlock FontSize="11" Foreground="#888" VerticalAlignment="Center">
+                        <Run Text="TestPackage by "/>
+                        <Hyperlink NavigateUri="https://rwksystems.com" RequestNavigate="Hyperlink_Navigate">
+                            RWK Systems
+                        </Hyperlink>
+                    </TextBlock>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button x:Name="BtnRefresh" Content="Refresh" Padding="15,5" Margin="5,0"
+                            Click="Refresh_Click"/>
+                    <Button x:Name="BtnUninstall" Content="Uninstall" Padding="15,5" Margin="5,0"
+                            Background="#C62828" Foreground="White" BorderBrush="#C62828"
+                            Click="Uninstall_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

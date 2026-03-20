@@ -1,0 +1,44 @@
+name: Build TestPackage
+
+on:
+  push:
+    branches: [ main, 'claude/**' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Build (Framework-dependent)
+      run: |
+        dotnet publish src\TestPackageApp\TestPackageApp.csproj -c Release -r win-x64 --self-contained false -o dist\framework-dependent
+        dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c Release -r win-x64 --self-contained false -o dist\framework-dependent
+        copy config.ini dist\framework-dependent\config.ini
+
+    - name: Build (Self-contained)
+      run: |
+        dotnet publish src\TestPackageApp\TestPackageApp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist\self-contained
+        dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist\self-contained
+        copy config.ini dist\self-contained\config.ini
+
+    - name: Upload Framework-dependent Build
+      uses: actions/upload-artifact@v4
+      with:
+        name: TestPackage-framework-dependent
+        path: dist/framework-dependent/
+
+    - name: Upload Self-contained Build
+      uses: actions/upload-artifact@v4
+      with:
+        name: TestPackage-self-contained
+        path: dist/self-contained/
