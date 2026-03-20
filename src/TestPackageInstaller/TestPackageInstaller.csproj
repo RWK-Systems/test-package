@@ -4,7 +4,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <ApplicationIcon>..\..\assets\installer.ico</ApplicationIcon>
+    <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>TestPackageInstaller</AssemblyName>
     <RootNamespace>TestPackageInstaller</RootNamespace>
     <Version>1.0.0</Version>

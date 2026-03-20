@@ -28,8 +28,6 @@ $publishArgs = @(
 
 if ($SelfContained) {
     $publishArgs += "--self-contained", "true"
-    $publishArgs += "-p:PublishSingleFile=true"
-    $publishArgs += "-p:IncludeNativeLibrariesForSelfExtract=true"
     Write-Host "Building self-contained (no .NET runtime required on target)" -ForegroundColor Yellow
 } else {
     $publishArgs += "--self-contained", "false"
