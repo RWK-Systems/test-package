@@ -49,14 +49,26 @@ After installation, TestPackage provides a context viewer that shows:
 - **Feature status** — which installer features were enabled
 - **Uninstall button** — clean removal with detailed logging
 
-## Quick Start
+## Installation
 
-### Prerequisites
+### Option 1: winget (Recommended)
+
+```
+winget install RWKSystems.TestPackage
+```
+
+### Option 2: Download Installer
+
+Download **TestPackageSetup.exe** from the [latest GitHub release](https://github.com/rwk-systems/test-package/releases/latest) and run it. Installs to `%ProgramFiles%\RWK Systems\Test Package` by default.
+
+### Option 3: Build from Source
+
+#### Prerequisites
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (for building)
 - Windows 10/11 (for running)
 
-### Build
+#### Build
 
 ```powershell
 # PowerShell
