@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>TestPackageApp</AssemblyName>
     <RootNamespace>TestPackageApp</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Company>RWK Systems</Company>
     <Product>TestPackage</Product>
     <Description>TestPackage - Installation test application by RWK Systems</Description>
