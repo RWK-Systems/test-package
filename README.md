@@ -144,6 +144,10 @@ test-package/
         └── build.yml                   # GitHub Actions CI
 ```
 
+## Product Page
+
+For more information, visit the [Test Package product page](https://www.rwksystems.com/test-package/).
+
 ## License
 
 This project is provided for testing purposes by [RWK Systems](https://rwksystems.com).
