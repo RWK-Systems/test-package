@@ -141,3 +141,4 @@ SectionEnd
 Function OpenInstallFolder
     ExecShell "open" "$INSTDIR"
 FunctionEnd
+
