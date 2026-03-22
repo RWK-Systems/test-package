@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <AssemblyName>TestPackageSmokeTest</AssemblyName>
+    <RootNamespace>TestPackageSmokeTest</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TestPackageInstaller\TestPackageInstaller.csproj" />
+  </ItemGroup>
+
+</Project>

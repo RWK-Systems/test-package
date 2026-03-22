@@ -25,6 +25,20 @@ jobs:
         dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c Release -r win-x64 --self-contained false -o dist\framework-dependent
         copy config.ini dist\framework-dependent\config.ini
 
+    - name: Build and run smoke test
+      run: |
+        dotnet publish src\TestPackageSmokeTest\TestPackageSmokeTest.csproj -c Release -r win-x64 --self-contained false -o dist\smoketest
+        copy config.ini dist\smoketest\config.ini
+        dist\smoketest\TestPackageSmokeTest.exe 2>&1 | tee dist\smoke-test-output.txt
+        if ($LASTEXITCODE -ne 0) { exit 1 }
+
+    - name: Upload smoke test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: smoke-test-output
+        path: dist/smoke-test-output.txt
+
     - name: Build (Self-contained)
       run: |
         dotnet publish src\TestPackageApp\TestPackageApp.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained
