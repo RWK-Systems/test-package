@@ -75,8 +75,8 @@ Edit `config.ini` to enable/disable features. The file is heavily commented — 
 
 ### Run
 
-1. Place `config.ini` alongside `TestPackageInstaller.exe`
-2. Run `TestPackageInstaller.exe`
+1. Place `config.ini` alongside `test-package.exe`
+2. Run `test-package.exe`
 3. Follow the wizard
 
 ### Uninstall
@@ -130,7 +130,7 @@ test-package/
 ├── build.cmd                           # Batch build script
 ├── TestPackage.sln                     # Visual Studio solution
 ├── src/
-│   ├── TestPackageInstaller/           # Wizard-style installer (WPF)
+│   ├── TestPackageInstaller/           # Wizard-style installer (WPF) → builds as test-package.exe
 │   │   ├── ConfigParser.cs             # INI file parser
 │   │   ├── InstallActions.cs           # All installation logic
 │   │   ├── MainWindow.xaml/xaml.cs     # Wizard UI

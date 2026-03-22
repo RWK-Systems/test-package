@@ -24,6 +24,7 @@ jobs:
         dotnet publish src\TestPackageApp\TestPackageApp.csproj -c Release -r win-x64 --self-contained false -o dist\framework-dependent
         dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c Release -r win-x64 --self-contained false -o dist\framework-dependent
         copy config.ini dist\framework-dependent\config.ini
+        copy readme.txt dist\framework-dependent\readme.txt
 
     - name: Build and run smoke test
       run: |
@@ -44,6 +45,12 @@ jobs:
         dotnet publish src\TestPackageApp\TestPackageApp.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained
         dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained
         copy config.ini dist\self-contained\config.ini
+        copy readme.txt dist\self-contained\readme.txt
+
+    - name: Build NSIS installer
+      run: |
+        choco install nsis -y --no-progress
+        & "${env:ProgramFiles(x86)}\NSIS\makensis.exe" installer\test-package-setup.nsi
 
     - name: Upload Framework-dependent Build
       uses: actions/upload-artifact@v4
@@ -56,3 +63,9 @@ jobs:
       with:
         name: TestPackage-self-contained
         path: dist/self-contained/
+
+    - name: Upload Installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: TestPackageSetup
+        path: dist/TestPackageSetup.exe
