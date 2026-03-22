@@ -1,5 +1,9 @@
 # TestPackage
 
+<p align="center">
+  <img src="assets/icon.png" alt="TestPackage" width="128" />
+</p>
+
 **A configurable Windows installation simulator for testing repackaging, application virtualization, and deployment solutions.**
 
 By [RWK Systems](https://rwksystems.com)
