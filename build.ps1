@@ -6,7 +6,8 @@ param(
     [string]$Configuration = "Release",
     [string]$OutputDir = ".\dist",
     [switch]$SelfContained,
-    [string]$Runtime = "win-x64"
+    [string]$Runtime = "win-x64",
+    [switch]$Sign
 )
 
 $ErrorActionPreference = "Stop"
@@ -46,6 +47,19 @@ dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj @publishArgs
 
 # Copy config.ini alongside the installer
 Copy-Item "config.ini" "$OutputDir\publish\config.ini" -Force
+
+# Code signing (requires Azure Trusted Signing CLI: dotnet tool install -g Microsoft.Trusted.Signing.Client)
+if ($Sign) {
+    $buildDir = if ($SelfContained) { "$OutputDir\self-contained" } else { "$OutputDir\publish" }
+    Write-Host ""
+    Write-Host "Signing executables..." -ForegroundColor Green
+    Get-ChildItem "$buildDir\*.exe" | ForEach-Object {
+        Write-Host "  Signing $($_.Name)..." -ForegroundColor White
+        signtool sign /v /fd SHA256 /tr http://timestamp.acs.microsoft.com /td SHA256 /dlib "Azure.CodeSigning.Dlib.dll" /dmdf sign-metadata.json $_.FullName
+        if ($LASTEXITCODE -ne 0) { throw "Signing failed for $($_.Name)" }
+    }
+    Write-Host "All executables signed." -ForegroundColor Green
+}
 
 Write-Host ""
 Write-Host "=== Build Complete ===" -ForegroundColor Cyan
