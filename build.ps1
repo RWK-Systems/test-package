@@ -23,7 +23,7 @@ New-Item -ItemType Directory -Path $OutputDir | Out-Null
 $publishArgs = @(
     "--configuration", $Configuration,
     "--runtime", $Runtime,
-    "--output", "$OutputDir\publish"
+    "--output", $(if ($SelfContained) { "$OutputDir\self-contained" } else { "$OutputDir\publish" })
 )
 
 if ($SelfContained) {
@@ -41,7 +41,7 @@ dotnet publish src\TestPackageApp\TestPackageApp.csproj @publishArgs
 
 # Build TestPackageInstaller
 Write-Host ""
-Write-Host "Building TestPackageInstaller..." -ForegroundColor Green
+Write-Host "Building TestPackageInstaller (single-file)..." -ForegroundColor Green
 dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj @publishArgs
 
 # Copy config.ini alongside the installer
@@ -52,7 +52,9 @@ Write-Host "=== Build Complete ===" -ForegroundColor Cyan
 Write-Host "Output: $OutputDir\publish" -ForegroundColor White
 Write-Host ""
 Write-Host "Contents:" -ForegroundColor White
-Get-ChildItem "$OutputDir\publish" | Format-Table Name, Length -AutoSize
+Get-ChildItem $(if ($SelfContained) { "$OutputDir\self-contained" } else { "$OutputDir\publish" }) | Format-Table Name, Length -AutoSize
 Write-Host ""
 Write-Host "To test: Run $OutputDir\publish\test-package.exe" -ForegroundColor Yellow
 Write-Host "(config.ini must be in the same directory as the executable)" -ForegroundColor Yellow
+
+

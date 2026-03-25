@@ -11,7 +11,7 @@ echo Building TestPackageApp...
 dotnet publish src\TestPackageApp\TestPackageApp.csproj -c Release -r win-x64 --self-contained false -o dist\publish
 if errorlevel 1 goto :error
 
-echo Building TestPackageInstaller...
+echo Building TestPackageInstaller (single-file)...
 dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c Release -r win-x64 --self-contained false -o dist\publish
 if errorlevel 1 goto :error
 
@@ -29,3 +29,4 @@ echo BUILD FAILED
 exit /b 1
 
 :end
+

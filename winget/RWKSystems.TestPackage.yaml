@@ -2,7 +2,7 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.singleton.1.6.0.schema.json
 
 PackageIdentifier: RWKSystems.TestPackage
-PackageVersion: 1.0.0
+PackageVersion: 1.0.1
 PackageLocale: en-US
 Publisher: RWK Systems
 PublisherUrl: https://rwksystems.com
@@ -30,11 +30,11 @@ Tags:
   - application-virtualization
   - sccm
   - intune
-ReleaseNotesUrl: https://github.com/rwk-systems/test-package/releases/tag/v1.0.0
+ReleaseNotesUrl: https://github.com/rwk-systems/test-package/releases/tag/v1.0.1
 Installers:
   - Architecture: x64
     InstallerType: nullsoft
-    InstallerUrl: https://github.com/rwk-systems/test-package/releases/download/v1.0.0/TestPackageSetup.exe
+    InstallerUrl: https://github.com/rwk-systems/test-package/releases/download/v1.0.1/TestPackageSetup.exe
     InstallerSha256: # UPDATE: Replace with actual SHA256 hash after release build
     InstallerSwitches:
       Silent: /S
