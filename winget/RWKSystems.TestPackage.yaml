@@ -35,7 +35,7 @@ Installers:
   - Architecture: x64
     InstallerType: nullsoft
     InstallerUrl: https://github.com/rwk-systems/test-package/releases/download/v1.0.1/TestPackageSetup.exe
-    InstallerSha256: # UPDATE: Replace with actual SHA256 hash after release build
+    InstallerSha256: 408e8e4be4e39716a85b561219d449e31c1813fc9884c81ca2cb1eef8d5e0895
     InstallerSwitches:
       Silent: /S
       SilentWithProgress: /S
