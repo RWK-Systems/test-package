@@ -13,6 +13,9 @@
     <Product>TestPackage Installer</Product>
     <Description>A configurable installation simulator for testing repackaging and deployment solutions</Description>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SelfContained)' == 'true'">
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
