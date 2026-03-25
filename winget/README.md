@@ -15,8 +15,8 @@ winget install Microsoft.WingetCreate
 # Update the manifest and submit a PR to microsoft/winget-pkgs
 # Replace VERSION and HASH with values from the release
 wingetcreate update RWKSystems.TestPackage `
-  --version 1.0.0 `
-  --urls https://github.com/rwk-systems/test-package/releases/download/v1.0.0/TestPackageSetup.exe `
+  --version 1.0.1 `
+  --urls https://github.com/rwk-systems/test-package/releases/download/v1.0.1/TestPackageSetup.exe `
   --submit `
   --token YOUR_GITHUB_PAT
 ```
@@ -29,7 +29,7 @@ The `--submit` flag automatically forks `microsoft/winget-pkgs` and creates a PR
 2. Update the `InstallerSha256` with the hash from the GitHub release
 3. Update the `PackageVersion` and download URL
 4. Fork [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs)
-5. Place the manifest at: `manifests/r/RWKSystems/TestPackage/1.0.0/RWKSystems.TestPackage.yaml`
+5. Place the manifest at: `manifests/r/RWKSystems/TestPackage/1.0.1/RWKSystems.TestPackage.yaml`
 6. Submit a PR
 
 ### Option C: GitHub Actions (after initial acceptance)

@@ -23,7 +23,7 @@
                     <TextBlock Text="Installation Context Viewer" FontSize="12" Foreground="#CCE5FF" Margin="0,3,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
-                    <TextBlock x:Name="VersionText" Text="v1.0.0" Foreground="#99CCFF" FontSize="11"/>
+                    <TextBlock x:Name="VersionText" Text="v1.0.1" Foreground="#99CCFF" FontSize="11"/>
                 </StackPanel>
             </Grid>
         </Border>
