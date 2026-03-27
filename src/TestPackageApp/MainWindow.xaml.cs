@@ -19,12 +19,21 @@ namespace TestPackageApp
         public MainWindow()
         {
             InitializeComponent();
+            ClampToScreen();
             LoadManifest();
             PopulateContext();
             PopulateInstallDetails();
             PopulateTestFiles();
             PopulateRegistryStatus();
             PopulateFeatures();
+        }
+
+        private void ClampToScreen()
+        {
+            var workArea = SystemParameters.WorkArea;
+            MaxHeight = workArea.Height;
+            if (Width > workArea.Width)
+                Width = workArea.Width;
         }
 
         private void LoadManifest()
