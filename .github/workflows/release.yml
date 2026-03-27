@@ -15,12 +15,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Extract version from tag
+    - name: Extract version and pre-release flag
       id: version
       shell: pwsh
       run: |
-        $version = "${{ github.ref_name }}".TrimStart('v')
+        $tag = "${{ github.ref_name }}"
+        $version = $tag.TrimStart('v')
+        $isPrerelease = $version -match '-'
         echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+        echo "PRERELEASE=$($isPrerelease.ToString().ToLower())" >> $env:GITHUB_OUTPUT
 
     - name: Setup .NET 8
       uses: actions/setup-dotnet@v4
@@ -121,17 +124,4 @@ jobs:
           For more information, visit the [product page](https://www.rwksystems.com/test-package/).
         files: dist/TestPackageSetup.exe
         draft: false
-        prerelease: false
-
-    # Uncomment after initial winget submission is accepted and WINGET_CREATE_PAT secret is set.
-    # The PAT needs public_repo scope on a GitHub account that can fork microsoft/winget-pkgs.
-    #
-    # - name: Update winget package
-    #   run: |
-    #     Invoke-WebRequest -Uri https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
-    #     .\wingetcreate.exe update RWKSystems.TestPackage `
-    #       --version ${{ steps.version.outputs.VERSION }} `
-    #       --urls "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/TestPackageSetup.exe" `
-    #       --submit `
-    #       --token ${{ secrets.WINGET_CREATE_PAT }}
-
+        prerelease: ${{ steps.version.outputs.PRERELEASE == 'true' }}

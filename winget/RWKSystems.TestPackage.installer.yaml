@@ -2,11 +2,11 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.9.0.schema.json
 
 PackageIdentifier: RWKSystems.TestPackage
-PackageVersion: 1.0.2
+PackageVersion: 1.0.3
 Installers:
   - Architecture: x64
     InstallerType: nullsoft
-    InstallerUrl: https://github.com/rwk-systems/test-package/releases/download/v1.0.2/TestPackageSetup.exe
+    InstallerUrl: https://github.com/rwk-systems/test-package/releases/download/v1.0.3/TestPackageSetup.exe
     InstallerSha256: PLACEHOLDER
     InstallerSwitches:
       Silent: /S
