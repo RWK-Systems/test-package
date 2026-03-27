@@ -85,8 +85,15 @@ jobs:
       id: hash
       shell: pwsh
       run: |
-        $hash = (Get-FileHash "dist\TestPackageSetup_v${{ steps.version.outputs.VERSION }}.exe" -Algorithm SHA256).Hash
+        $version = "${{ steps.version.outputs.VERSION }}"
+        Write-Host "Looking for installer in dist\"
+        Get-ChildItem dist\*.exe | ForEach-Object { Write-Host "  Found: $($_.FullName)" }
+        $installer = Get-ChildItem "dist\TestPackageSetup_v*.exe" | Select-Object -First 1
+        if (-not $installer) { throw "Installer not found in dist\" }
+        $hash = (Get-FileHash $installer.FullName -Algorithm SHA256).Hash
         echo "SHA256=$hash" >> $env:GITHUB_OUTPUT
+        echo "INSTALLER_NAME=$($installer.Name)" >> $env:GITHUB_OUTPUT
+        echo "Installer: $($installer.Name)"
         echo "Installer SHA256: $hash"
 
     - name: Create GitHub Release
@@ -119,7 +126,7 @@ jobs:
           - `readme.txt` — Documentation
 
           For more information, visit the [product page](https://www.rwksystems.com/test-package/).
-        files: dist/TestPackageSetup_v${{ steps.version.outputs.VERSION }}.exe
+        files: dist/TestPackageSetup_v*.exe
         draft: false
         prerelease: false
 
