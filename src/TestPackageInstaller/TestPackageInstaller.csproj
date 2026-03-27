@@ -6,7 +6,7 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
-    <AssemblyName>test-package</AssemblyName>
+    <AssemblyName>TestPackageInstaller</AssemblyName>
     <RootNamespace>TestPackageInstaller</RootNamespace>
     <Version>1.0.2</Version>
     <Company>RWK Systems</Company>

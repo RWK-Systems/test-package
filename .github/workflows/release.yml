@@ -85,7 +85,7 @@ jobs:
       id: hash
       shell: pwsh
       run: |
-        $hash = (Get-FileHash dist\TestPackageSetup.exe -Algorithm SHA256).Hash
+        $hash = (Get-FileHash "dist\TestPackageSetup_v${{ steps.version.outputs.VERSION }}.exe" -Algorithm SHA256).Hash
         echo "SHA256=$hash" >> $env:GITHUB_OUTPUT
         echo "Installer SHA256: $hash"
 
@@ -100,7 +100,7 @@ jobs:
 
           ### Download
 
-          **[TestPackageSetup.exe](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/TestPackageSetup.exe)** — Self-contained installer (no .NET runtime required)
+          **[TestPackageSetup_v${{ steps.version.outputs.VERSION }}.exe](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/TestPackageSetup_v${{ steps.version.outputs.VERSION }}.exe)** — Self-contained installer (no .NET runtime required)
 
           ### Install via winget
 
@@ -114,12 +114,12 @@ jobs:
           ```
 
           ### What's included
-          - `test-package.exe` — Installation simulator wizard
+          - `TestPackageInstaller.exe` — Installation simulator wizard
           - `config.ini` — Feature configuration file
           - `readme.txt` — Documentation
 
           For more information, visit the [product page](https://www.rwksystems.com/test-package/).
-        files: dist/TestPackageSetup.exe
+        files: dist/TestPackageSetup_v${{ steps.version.outputs.VERSION }}.exe
         draft: false
         prerelease: false
 
@@ -131,7 +131,7 @@ jobs:
     #     Invoke-WebRequest -Uri https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
     #     .\wingetcreate.exe update RWKSystems.TestPackage `
     #       --version ${{ steps.version.outputs.VERSION }} `
-    #       --urls "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/TestPackageSetup.exe" `
+    #       --urls "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/TestPackageSetup_v${{ steps.version.outputs.VERSION }}.exe" `
     #       --submit `
     #       --token ${{ secrets.WINGET_CREATE_PAT }}
 

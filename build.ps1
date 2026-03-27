@@ -68,7 +68,7 @@ Write-Host ""
 Write-Host "Contents:" -ForegroundColor White
 Get-ChildItem $(if ($SelfContained) { "$OutputDir\self-contained" } else { "$OutputDir\publish" }) | Format-Table Name, Length -AutoSize
 Write-Host ""
-Write-Host "To test: Run $OutputDir\publish\test-package.exe" -ForegroundColor Yellow
+Write-Host "To test: Run $OutputDir\publish\TestPackageInstaller.exe" -ForegroundColor Yellow
 Write-Host "(config.ini must be in the same directory as the executable)" -ForegroundColor Yellow
 
 

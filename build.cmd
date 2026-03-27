@@ -20,7 +20,7 @@ copy /y config.ini dist\publish\config.ini
 echo.
 echo === Build Complete ===
 echo Output: dist\publish
-echo Run dist\publish\test-package.exe to test
+echo Run dist\publish\TestPackageInstaller.exe to test
 goto :end
 
 :error

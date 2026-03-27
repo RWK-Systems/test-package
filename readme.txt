@@ -21,7 +21,8 @@ Every feature is independently toggleable through config.ini.
 
 FILES
 
-  test-package.exe    The main application. Run this to launch the installation
+  TestPackageInstaller.exe
+                      The main application. Run this to launch the installation
                       wizard that simulates a software install.
 
   config.ini          Controls all installer behavior. Edit this to enable or
@@ -38,7 +39,7 @@ FILES
 QUICK START
 
   1. Edit config.ini to enable the features you want to test.
-  2. Run test-package.exe.
+  2. Run TestPackageInstaller.exe.
   3. Follow the installation wizard.
   4. The installed application will show a context viewer where you can verify
      what was installed and uninstall when done.
@@ -71,7 +72,7 @@ TESTING SCENARIOS
 
 Repackaging Validation:
   1. Set config.ini with desired features enabled
-  2. Run test-package.exe while your repackaging tool captures
+  2. Run TestPackageInstaller.exe while your repackaging tool captures
   3. Build the repackaged output
   4. Deploy and verify with the context viewer
 

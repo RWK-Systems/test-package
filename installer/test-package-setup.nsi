@@ -17,7 +17,7 @@
 ; General
 ; ---------------------------------------------------------------------------
 Name "Test Package"
-OutFile "..\dist\TestPackageSetup.exe"
+OutFile "..\dist\TestPackageSetup_v${PRODUCT_VERSION}.exe"
 InstallDir "$PROGRAMFILES\RWK Systems\Test Package"
 InstallDirRegKey HKLM "Software\RWK Systems\Test Package" "InstallDir"
 RequestExecutionLevel admin
@@ -52,7 +52,7 @@ VIAddVersionKey "ProductVersion" "${PRODUCT_VERSION}"
 
 ; Finish page
 !define MUI_FINISHPAGE_TITLE "Test Package Setup Complete"
-!define MUI_FINISHPAGE_TEXT "Test Package has been installed on your computer.$\r$\n$\r$\nYou can now run test-package.exe to launch the installation simulator. Edit config.ini to customize the installation behavior before running."
+!define MUI_FINISHPAGE_TEXT "Test Package has been installed on your computer.$\r$\n$\r$\nYou can now run TestPackageInstaller.exe to launch the installation simulator. Edit config.ini to customize the installation behavior before running."
 !define MUI_FINISHPAGE_RUN ""
 !define MUI_FINISHPAGE_RUN_TEXT "Open installation folder"
 !define MUI_FINISHPAGE_RUN_FUNCTION "OpenInstallFolder"
@@ -86,7 +86,7 @@ Section "Install" SecInstall
     File /r "..\dist\self-contained\*.*"
 
     ; Ensure key files are present (these should already be in the build output)
-    ; test-package.exe, TestPackageApp.exe, config.ini are from the dotnet publish
+    ; TestPackageInstaller.exe, TestPackageApp.exe, config.ini are from the dotnet publish
     ; readme.txt is copied during build
 
     ; Create uninstaller
@@ -97,7 +97,7 @@ Section "Install" SecInstall
     WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
     WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "QuietUninstallString" '"$INSTDIR\uninstall.exe" /S'
     WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "InstallLocation" "$INSTDIR"
-    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\test-package.exe"
+    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\TestPackageInstaller.exe"
     WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
     WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
     WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
@@ -114,7 +114,7 @@ Section "Install" SecInstall
 
     ; Create Start Menu shortcuts
     CreateDirectory "$SMPROGRAMS\RWK Systems"
-    CreateShortcut "$SMPROGRAMS\RWK Systems\Test Package.lnk" "$INSTDIR\test-package.exe"
+    CreateShortcut "$SMPROGRAMS\RWK Systems\Test Package.lnk" "$INSTDIR\TestPackageInstaller.exe"
     CreateShortcut "$SMPROGRAMS\RWK Systems\Uninstall Test Package.lnk" "$INSTDIR\uninstall.exe"
 SectionEnd
 
