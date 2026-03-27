@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace TestPackageInstaller
+namespace TestPackage.Core
 {
     public class ConfigParser
     {
@@ -72,6 +72,15 @@ namespace TestPackageInstaller
         public Dictionary<string, string> GetSection(string section)
         {
             return _sections.TryGetValue(section, out var s) ? new Dictionary<string, string>(s) : new Dictionary<string, string>();
+        }
+
+        public IEnumerable<string> GetSectionNames() => _sections.Keys;
+
+        public void Set(string section, string key, string value)
+        {
+            if (!_sections.ContainsKey(section))
+                _sections[section] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            _sections[section][key] = value;
         }
 
         public string ExpandVariables(string input, string installDir)

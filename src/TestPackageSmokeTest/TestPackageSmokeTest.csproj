@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TestPackageInstaller\TestPackageInstaller.csproj" />
+    <ProjectReference Include="..\TestPackage.Core\TestPackage.Core.csproj" />
   </ItemGroup>
 
 </Project>

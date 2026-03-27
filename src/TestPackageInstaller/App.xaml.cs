@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Security.Principal;
 using System.Windows;
+using TestPackage.Core;
 
 namespace TestPackageInstaller
 {

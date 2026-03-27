@@ -37,12 +37,16 @@ jobs:
         dist\smoketest\TestPackageSmokeTest.exe 2>&1 | tee dist\smoke-test-output.txt
         if ($LASTEXITCODE -ne 0) { exit 1 }
 
-    - name: Build (Self-contained)
+    - name: Build templates (Self-contained)
       run: |
-        dotnet publish src\TestPackageApp\TestPackageApp.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained
-        dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained
-        copy config.ini dist\self-contained\config.ini
-        copy readme.txt dist\self-contained\readme.txt
+        dotnet publish src\TestPackageApp\TestPackageApp.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained\templates
+        dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained\templates
+        copy config.ini dist\self-contained\templates\config.ini
+
+    - name: Build Configurator (Self-contained)
+      run: |
+        dotnet publish src\TestPackage.Configurator\TestPackage.Configurator.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained\configurator
+        xcopy dist\self-contained\templates dist\self-contained\configurator\templates\ /E /I /Y
 
     - name: Install NSIS
       run: choco install nsis -y --no-progress
@@ -88,22 +92,29 @@ jobs:
       id: hash
       shell: pwsh
       run: |
-        $hash = (Get-FileHash "dist\TestPackageSetup.exe" -Algorithm SHA256).Hash
+        $hash = (Get-FileHash "dist\TestPackageConfiguratorSetup.exe" -Algorithm SHA256).Hash
         echo "SHA256=$hash" >> $env:GITHUB_OUTPUT
         echo "Installer SHA256: $hash"
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        name: Test Package v${{ steps.version.outputs.VERSION }}
+        name: TestPackage Configurator v${{ steps.version.outputs.VERSION }}
         body: |
-          ## Test Package v${{ steps.version.outputs.VERSION }}
+          ## TestPackage Configurator v${{ steps.version.outputs.VERSION }}
 
-          A configurable Windows installation simulator for testing repackaging, application virtualization, and deployment solutions.
+          Design and generate simulated installers for testing repackaging, application virtualization, and deployment solutions.
+
+          ### What's New in v2.0
+
+          - **TestPackage Configurator** — A GUI tool to design your test scenarios
+          - **Generate Installer** — One click to create a simulated setup EXE
+          - Configurable EXE names (default: YourSimulatedSetup.exe / YourSimulatedApp.exe)
+          - All installer behaviors configurable via the Configurator UI
 
           ### Download
 
-          **[TestPackageSetup.exe](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/TestPackageSetup.exe)** — Self-contained installer (no .NET runtime required)
+          **[TestPackageConfiguratorSetup.exe](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/TestPackageConfiguratorSetup.exe)** — Self-contained installer (no .NET runtime required)
 
           ### Install via winget
 
@@ -116,12 +127,7 @@ jobs:
           ${{ steps.hash.outputs.SHA256 }}
           ```
 
-          ### What's included
-          - `TestPackageInstaller.exe` — Installation simulator wizard
-          - `config.ini` — Feature configuration file
-          - `readme.txt` — Documentation
-
           For more information, visit the [product page](https://www.rwksystems.com/test-package/).
-        files: dist/TestPackageSetup.exe
+        files: dist/TestPackageConfiguratorSetup.exe
         draft: false
         prerelease: ${{ steps.version.outputs.PRERELEASE == 'true' }}

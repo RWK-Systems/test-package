@@ -19,12 +19,16 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    - name: Build (Framework-dependent)
+    - name: Build templates (Framework-dependent)
       run: |
-        dotnet publish src\TestPackageApp\TestPackageApp.csproj -c Release -r win-x64 --self-contained false -o dist\framework-dependent
-        dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c Release -r win-x64 --self-contained false -o dist\framework-dependent
-        copy config.ini dist\framework-dependent\config.ini
-        copy readme.txt dist\framework-dependent\readme.txt
+        dotnet publish src\TestPackageApp\TestPackageApp.csproj -c Release -r win-x64 --self-contained false -o dist\framework-dependent\templates
+        dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c Release -r win-x64 --self-contained false -o dist\framework-dependent\templates
+        copy config.ini dist\framework-dependent\templates\config.ini
+
+    - name: Build Configurator (Framework-dependent)
+      run: |
+        dotnet publish src\TestPackage.Configurator\TestPackage.Configurator.csproj -c Release -r win-x64 --self-contained false -o dist\framework-dependent\configurator
+        xcopy dist\framework-dependent\templates dist\framework-dependent\configurator\templates\ /E /I /Y
 
     - name: Build and run smoke test
       run: |
@@ -40,33 +44,30 @@ jobs:
         name: smoke-test-output
         path: dist/smoke-test-output.txt
 
-    - name: Build (Self-contained)
+    - name: Build templates (Self-contained)
       run: |
-        dotnet publish src\TestPackageApp\TestPackageApp.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained
-        dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained
-        copy config.ini dist\self-contained\config.ini
-        copy readme.txt dist\self-contained\readme.txt
+        dotnet publish src\TestPackageApp\TestPackageApp.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained\templates
+        dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained\templates
+        copy config.ini dist\self-contained\templates\config.ini
+
+    - name: Build Configurator (Self-contained)
+      run: |
+        dotnet publish src\TestPackage.Configurator\TestPackage.Configurator.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained\configurator
+        xcopy dist\self-contained\templates dist\self-contained\configurator\templates\ /E /I /Y
 
     - name: Build NSIS installer
       run: |
         choco install nsis -y --no-progress
         & "${env:ProgramFiles(x86)}\NSIS\makensis.exe" installer\test-package-setup.nsi
 
-    - name: Upload Framework-dependent Build
+    - name: Upload Configurator Build
       uses: actions/upload-artifact@v4
       with:
-        name: TestPackage-framework-dependent
-        path: dist/framework-dependent/
-
-    - name: Upload Self-contained Build
-      uses: actions/upload-artifact@v4
-      with:
-        name: TestPackage-self-contained
-        path: dist/self-contained/
+        name: TestPackage-Configurator
+        path: dist/self-contained/configurator/
 
     - name: Upload Installer
       uses: actions/upload-artifact@v4
       with:
-        name: TestPackageSetup
-        path: dist/TestPackageSetup.exe
-
+        name: TestPackageConfiguratorSetup
+        path: dist/TestPackageConfiguratorSetup.exe
