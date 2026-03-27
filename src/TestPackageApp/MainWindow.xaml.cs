@@ -62,8 +62,15 @@ namespace TestPackageApp
             // Integrity level
             IntegrityLevel.Text = isAdmin ? "High" : "Medium";
 
+            // Show version from manifest, or fall back to assembly version
             if (_manifest != null)
                 VersionText.Text = $"v{_manifest.AppVersion}";
+            else
+            {
+                var asm = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                if (asm != null)
+                    VersionText.Text = $"v{asm.Major}.{asm.Minor}.{asm.Build}";
+            }
         }
 
         private void PopulateInstallDetails()
