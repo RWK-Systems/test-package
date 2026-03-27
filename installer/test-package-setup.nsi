@@ -17,7 +17,7 @@
 ; General
 ; ---------------------------------------------------------------------------
 Name "Test Package"
-OutFile "..\dist\TestPackageSetup_v${PRODUCT_VERSION}.exe"
+OutFile "..\dist\TestPackageSetup.exe"
 InstallDir "$PROGRAMFILES\RWK Systems\Test Package"
 InstallDirRegKey HKLM "Software\RWK Systems\Test Package" "InstallDir"
 RequestExecutionLevel admin

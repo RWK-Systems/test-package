@@ -85,15 +85,8 @@ jobs:
       id: hash
       shell: pwsh
       run: |
-        $version = "${{ steps.version.outputs.VERSION }}"
-        Write-Host "Looking for installer in dist\"
-        Get-ChildItem dist\*.exe | ForEach-Object { Write-Host "  Found: $($_.FullName)" }
-        $installer = Get-ChildItem "dist\TestPackageSetup_v*.exe" | Select-Object -First 1
-        if (-not $installer) { throw "Installer not found in dist\" }
-        $hash = (Get-FileHash $installer.FullName -Algorithm SHA256).Hash
+        $hash = (Get-FileHash "dist\TestPackageSetup.exe" -Algorithm SHA256).Hash
         echo "SHA256=$hash" >> $env:GITHUB_OUTPUT
-        echo "INSTALLER_NAME=$($installer.Name)" >> $env:GITHUB_OUTPUT
-        echo "Installer: $($installer.Name)"
         echo "Installer SHA256: $hash"
 
     - name: Create GitHub Release
@@ -107,7 +100,7 @@ jobs:
 
           ### Download
 
-          **[TestPackageSetup_v${{ steps.version.outputs.VERSION }}.exe](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/TestPackageSetup_v${{ steps.version.outputs.VERSION }}.exe)** — Self-contained installer (no .NET runtime required)
+          **[TestPackageSetup.exe](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/TestPackageSetup.exe)** — Self-contained installer (no .NET runtime required)
 
           ### Install via winget
 
@@ -126,7 +119,7 @@ jobs:
           - `readme.txt` — Documentation
 
           For more information, visit the [product page](https://www.rwksystems.com/test-package/).
-        files: dist/TestPackageSetup_v*.exe
+        files: dist/TestPackageSetup.exe
         draft: false
         prerelease: false
 
@@ -138,7 +131,7 @@ jobs:
     #     Invoke-WebRequest -Uri https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
     #     .\wingetcreate.exe update RWKSystems.TestPackage `
     #       --version ${{ steps.version.outputs.VERSION }} `
-    #       --urls "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/TestPackageSetup_v${{ steps.version.outputs.VERSION }}.exe" `
+    #       --urls "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/TestPackageSetup.exe" `
     #       --submit `
     #       --token ${{ secrets.WINGET_CREATE_PAT }}
 
