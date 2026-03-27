@@ -11,6 +11,7 @@
     <Company>RWK Systems</Company>
     <Product>TestPackage</Product>
     <Description>TestPackage - Installation test application by RWK Systems</Description>
+    <ApplicationIcon>..\..\assets\icon.ico</ApplicationIcon>
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>

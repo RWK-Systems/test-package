@@ -12,6 +12,7 @@
     <Company>RWK Systems</Company>
     <Product>TestPackage Installer</Product>
     <Description>A configurable installation simulator for testing repackaging and deployment solutions</Description>
+    <ApplicationIcon>..\..\assets\icon.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 

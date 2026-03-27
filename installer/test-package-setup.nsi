@@ -43,8 +43,8 @@ VIAddVersionKey "ProductVersion" "${PRODUCT_VERSION}"
 ; Interface Settings
 ; ---------------------------------------------------------------------------
 !define MUI_ABORTWARNING
-!define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
-!define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+!define MUI_ICON "..\assets\icon.ico"
+!define MUI_UNICON "..\assets\icon.ico"
 
 ; Welcome page
 !define MUI_WELCOMEPAGE_TITLE "Welcome to Test Package Setup"
