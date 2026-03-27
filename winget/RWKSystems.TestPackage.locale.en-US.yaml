@@ -2,7 +2,7 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.9.0.schema.json
 
 PackageIdentifier: RWKSystems.TestPackage
-PackageVersion: 1.0.1
+PackageVersion: 1.0.2
 PackageLocale: en-US
 Publisher: RWK Systems
 PublisherUrl: https://rwksystems.com
@@ -30,6 +30,6 @@ Tags:
   - application-virtualization
   - sccm
   - intune
-ReleaseNotesUrl: https://github.com/rwk-systems/test-package/releases/tag/v1.0.1
+ReleaseNotesUrl: https://github.com/rwk-systems/test-package/releases/tag/v1.0.2
 ManifestType: defaultLocale
 ManifestVersion: 1.9.0
