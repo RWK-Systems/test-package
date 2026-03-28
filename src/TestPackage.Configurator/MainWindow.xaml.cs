@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -511,70 +510,43 @@ namespace TestPackage.Configurator
 
         private void Preview_Click(object sender, RoutedEventArgs e)
         {
-            var m = CollectToModel();
-            var sb = new StringBuilder();
-            sb.AppendLine($"{m.AppName} v{m.AppVersion}");
-            sb.AppendLine($"Publisher: {m.AppPublisher}");
-            sb.AppendLine($"GUID: {m.AppGUID}");
-            sb.AppendLine($"Require Admin: {m.RequireAdmin}");
-            sb.AppendLine();
-            sb.AppendLine("=== Output Files ===");
-            sb.AppendLine($"  Installer: {m.InstallerExeName}");
-            sb.AppendLine($"  Application: {m.AppExeName}");
-            sb.AppendLine();
-            sb.AppendLine("=== Wizard Pages ===");
-            if (m.ShowWelcome) sb.AppendLine("  Welcome");
-            if (m.ShowEULA) sb.AppendLine("  License Agreement");
-            if (m.ShowInstallContext) sb.AppendLine($"  Install Context (default: {m.DefaultContext})");
-            if (m.ShowTargetDirectory) sb.AppendLine($"  Target Directory (default: {m.DefaultPath})");
-            if (m.ShowComponents) sb.AppendLine($"  Components ({m.Components.Count} defined)");
-            sb.AppendLine("  Options Page");
-            if (m.ShowDesktopShortcut) sb.AppendLine($"    Desktop Shortcut (default: {(m.CreateDesktopShortcut ? "on" : "off")})");
-            if (m.ShowStartMenuPin) sb.AppendLine($"    Start Menu Pin (default: {(m.PinToStartMenu ? "on" : "off")})");
-            if (m.ShowRebootOption) sb.AppendLine($"    Reboot Prompt (default: {(m.PromptForReboot ? "on" : "off")})");
-            if (m.ShowActiveSetup) sb.AppendLine($"    Active Setup (default: {(m.ActiveSetupEnabled ? "on" : "off")})");
-            sb.AppendLine("  Installing");
-            sb.AppendLine("  Complete");
-            sb.AppendLine();
-            sb.AppendLine("=== Install Actions ===");
-            if (m.TestFilesEnabled && !string.IsNullOrEmpty(m.TestFiles))
-            {
-                var count = m.TestFiles.Split(',').Count(s => !string.IsNullOrWhiteSpace(s));
-                sb.AppendLine($"  Test Files: {count} file(s)");
-            }
-            if (m.RegistryEnabled && !string.IsNullOrEmpty(m.RegistryEntries))
-            {
-                var count = m.RegistryEntries.Split(',').Count(s => !string.IsNullOrWhiteSpace(s));
-                sb.AppendLine($"  Registry Entries: {count} entry/entries");
-            }
-            if (m.CreateDesktopShortcut) sb.AppendLine($"  Desktop Shortcut: \"{m.DesktopShortcutName}\"");
-            if (m.CreateStartMenuEntry) sb.AppendLine($"  Start Menu: {m.StartMenuFolder}");
-            if (m.FileAssociationsEnabled) sb.AppendLine("  File Associations: enabled");
-            if (m.ContextMenuEnabled) sb.AppendLine("  Context Menu: enabled");
-            if (m.EnvironmentVariablesEnabled) sb.AppendLine("  Environment Variables: enabled");
-            if (m.ServicesEnabled) sb.AppendLine($"  Service: {m.ServiceName} ({m.ServiceStartType})");
-            if (m.ScheduledTasksEnabled) sb.AppendLine($"  Scheduled Task: {m.TaskName} ({m.TaskSchedule})");
-            if (m.FirewallRulesEnabled) sb.AppendLine("  Firewall Rules: enabled");
-            if (m.ProtocolHandlersEnabled) sb.AppendLine("  Protocol Handlers: enabled");
-            if (m.ActiveSetupEnabled) sb.AppendLine("  Active Setup: enabled");
-            if (m.AppPathsEnabled) sb.AppendLine("  App Paths: enabled");
-            if (m.StartupEnabled) sb.AppendLine($"  Startup Entry: {m.StartupMethod}");
-            if (m.RegisterUninstaller) sb.AppendLine("  Uninstaller Registration: enabled");
-            sb.AppendLine();
-            sb.AppendLine("=== Uninstall Behavior ===");
-            sb.AppendLine($"  Clean Files: {m.CleanFiles}");
-            sb.AppendLine($"  Clean Registry: {m.CleanRegistry}");
-            sb.AppendLine($"  Clean Shortcuts: {m.CleanShortcuts}");
-            if (m.IntentionallyLeaveFiles) sb.AppendLine("  Intentional Leftover Files: YES");
-            if (m.IntentionallyLeaveRegistry) sb.AppendLine("  Intentional Leftover Registry: YES");
-            if (m.ForceReboot) sb.AppendLine("  Force Reboot: YES");
-            sb.AppendLine();
-            sb.AppendLine("=== UI ===");
-            sb.AppendLine($"  Banner Color: {m.BannerColor}");
-            if (m.SimulateInstallDelay) sb.AppendLine($"  Simulated Delay: {m.InstallDelayMs}ms per step");
+            var model = CollectToModel();
 
-            var preview = new PreviewWindow(sb.ToString()) { Owner = this };
-            preview.ShowDialog();
+            // Find the installer template
+            var exeDir = AppDomain.CurrentDomain.BaseDirectory;
+            var templatesDir = Path.Combine(exeDir, "templates");
+            if (!Directory.Exists(templatesDir)) templatesDir = exeDir;
+
+            var installerTemplate = Path.Combine(templatesDir, "TestPackageInstaller.exe");
+            if (!File.Exists(installerTemplate))
+            {
+                MessageBox.Show("Template not found. Cannot launch preview.\n\nEnsure the templates directory exists alongside the Configurator.",
+                    "TestPackage Configurator", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                // Generate to a temp folder
+                var tempDir = Path.Combine(Path.GetTempPath(), "TestPackage_Preview_" + Guid.NewGuid().ToString("N")[..8]);
+                Directory.CreateDirectory(tempDir);
+
+                File.Copy(installerTemplate, Path.Combine(tempDir, "TestPackageInstaller.exe"), true);
+                File.WriteAllText(Path.Combine(tempDir, "config.ini"), ConfigWriter.Write(model));
+
+                // Launch with --preview flag
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = Path.Combine(tempDir, "TestPackageInstaller.exe"),
+                    Arguments = "--preview",
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to launch preview:\n{ex.Message}",
+                    "TestPackage Configurator", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         // ===== Generate / Load / Save =====

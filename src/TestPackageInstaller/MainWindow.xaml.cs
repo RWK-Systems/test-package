@@ -19,12 +19,21 @@ namespace TestPackageInstaller
         private int _currentPage;
         private InstallActions? _installer;
 
+        private bool _previewMode;
+
         public MainWindow()
         {
             InitializeComponent();
+            _previewMode = App.IsPreviewMode;
             LoadConfig();
             BuildPageList();
             ShowPage(0);
+
+            if (_previewMode)
+            {
+                Title += " [PREVIEW]";
+                HeaderSubtitle.Text = "Preview Mode — no changes will be made";
+            }
         }
 
         private void LoadConfig()
@@ -213,6 +222,13 @@ namespace TestPackageInstaller
 
         private async void Install_Click(object sender, RoutedEventArgs e)
         {
+            if (_previewMode)
+            {
+                MessageBox.Show("This is a preview. No installation will be performed.\n\nIn the real installer, this would begin the installation process.",
+                    "Preview Mode", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             // Move to Installing page
             var installPageIndex = _pages.IndexOf(InstallingPage);
             ShowPage(installPageIndex);
