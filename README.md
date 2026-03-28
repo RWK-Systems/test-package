@@ -6,167 +6,119 @@
 
 **A configurable Windows installation simulator for testing repackaging, application virtualization, and deployment solutions.**
 
-By [RWK Systems](https://rwksystems.com)
-
 ---
 
 ## Why TestPackage?
 
-When testing repackaging tools (like AdminStudio, PACE Suite, Advanced Installer), application virtualization solutions (like App-V, ThinApp, Turbo.net), or deployment platforms (like SCCM, Intune, PDQ), engineers typically grab a generic app like 7-Zip or Notepad++ and hope it exercises enough installer behaviors. This is hit-or-miss.
+Packaging engineers need test installers. Most reach for whatever's handy — 7-Zip, Notepad++, VLC — but production apps exercise a narrow, fixed set of installer behaviors. They can't be reconfigured, and when something breaks, it's hard to tell whether the failure is in your tooling or in the app.
 
-**TestPackage** is purpose-built for this scenario. It's a fully configurable installer that lets you selectively enable or disable specific system changes — registry writes, file associations, services, shortcuts, environment variables, and more — so you can create targeted test cases for your tooling.
+**TestPackage** is purpose-built for this. It generates realistic simulated installers that exercise the exact Windows installer behaviors your packaging tools need to handle — so you can test your workflow, not someone else's app.
 
-## Features
+## How It Works
 
-All features are controlled via `config.ini` and can be toggled independently:
+### 1. Configure
 
-| Feature | Description |
-|---------|-------------|
-| **Wizard Pages** | Welcome, EULA, install context, directory, components, options |
-| **Install Context** | Per-user or per-machine installation |
-| **Test Files** | Write marker files to configurable locations |
-| **Registry Entries** | Write to HKCU/HKLM with configurable keys and values |
-| **Desktop Shortcuts** | Create `.lnk` shortcuts on the desktop |
-| **Start Menu** | Create Start Menu folder and entries |
-| **File Associations** | Register custom file type associations (.tpkg, .tpkx) |
-| **Context Menu** | Add right-click context menu entries |
-| **Environment Variables** | Set user or system environment variables |
-| **Windows Services** | Install a test Windows service |
-| **Scheduled Tasks** | Create scheduled tasks |
-| **Firewall Rules** | Add inbound/outbound firewall rules |
-| **Protocol Handlers** | Register custom URI protocols (testpkg://) |
-| **Active Setup** | Register per-user Active Setup components |
-| **App Paths** | Register in App Paths for Run dialog |
-| **Startup Entries** | Add to Windows startup (registry or Startup folder) |
-| **Font Installation** | Install test fonts |
-| **UAC Testing** | Optionally require admin elevation |
-| **Intentional Leftovers** | Optionally leave files/registry behind on uninstall |
+Open **TestPackage Configurator** and design your test scenario. Choose from 15+ independently toggleable installer behaviors:
 
-## The Installed Application
+| Category | Features |
+|----------|----------|
+| **Files & Registry** | Test files in configurable paths, registry entries (HKCU/HKLM/HKCR), environment variables |
+| **Shortcuts & Shell** | Desktop shortcuts, Start Menu entries, file associations, context menus, App Paths |
+| **Services & Tasks** | Windows services, scheduled tasks, startup entries |
+| **Network & Security** | Firewall rules, custom URI protocol handlers |
+| **System Integration** | Active Setup, font installation, COM registration |
+| **Uninstall Behavior** | Clean removal, or intentional leftovers for testing incomplete-uninstall detection |
+| **Wizard & UI** | Show/hide wizard pages, custom EULA text, banner colors, simulated install delay |
 
-After installation, TestPackage provides a context viewer that shows:
+Name your output files whatever you want — the defaults are `YourSimulatedSetup.exe` and `YourSimulatedApp.exe`.
 
-- **Execution context** — user, domain, admin status, integrity level, session ID
-- **Installation details** — location, context, components, install date
-- **Test file status** — checkmarks showing which files exist
-- **Registry status** — verification of all registry entries
-- **Feature status** — which installer features were enabled
-- **Uninstall button** — clean removal with detailed logging
+### 2. Generate
+
+Click **Generate Installer**. TestPackage produces a ready-to-use installer in your chosen output folder. Point your packaging tool at it — MSIX, App-V, Intune, SCCM, or anything else that captures or wraps Windows installers.
+
+### 3. Test
+
+Run the generated installer through your workflow:
+
+- **Repackaging** — Capture the install, build your package, deploy, and verify with the built-in context viewer
+- **Application virtualization** — Capture with your virtualization tool, run the virtual package, verify file and registry isolation
+- **Silent deployment** — Test silent install switches, per-user vs. per-machine contexts, and UAC elevation handling
+- **Uninstall validation** — Verify clean removal, or enable intentional leftovers to test your tool's orphan detection
+
+After installation, the context viewer displays every action the installer took. A machine-readable `install-manifest.json` and a human-readable `description.txt` provide full audit trails.
+
+### 4. Iterate
+
+Change the configuration and generate again. Each new scenario is one click away.
 
 ## Installation
 
-### Option 1: winget (Recommended)
+### Option 1: winget
 
 ```
 winget install RWKSystems.TestPackage
 ```
 
-### Option 2: Download Installer
+### Option 2: Download
 
-Download **TestPackageSetup.exe** from the [latest GitHub release](https://github.com/rwk-systems/test-package/releases/latest) and run it. Installs to `%ProgramFiles%\RWK Systems\Test Package` by default.
+Download **TestPackageConfiguratorSetup.exe** from the [latest GitHub release](https://github.com/RWK-Systems/test-package/releases/latest).
 
 ### Option 3: Build from Source
 
-#### Prerequisites
-
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (for building)
-- Windows 10/11 (for running)
-
-#### Build
+Requires [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) and Windows 10/11.
 
 ```powershell
-# PowerShell
-.\build.ps1
-
-# Or use the batch file
-build.cmd
-
-# Self-contained (no .NET runtime needed on target):
+git clone https://github.com/RWK-Systems/test-package.git
+cd test-package
 .\build.ps1 -SelfContained
 ```
 
-### Configure
-
-Edit `config.ini` to enable/disable features. The file is heavily commented — each section controls a specific installer behavior.
-
-### Run
-
-1. Place `config.ini` alongside `test-package.exe`
-2. Run `test-package.exe`
-3. Follow the wizard
-
-### Uninstall
-
-- Use the **Uninstall** button in the TestPackage application
-- Or use **Add/Remove Programs** (if `RegisterUninstaller=true`)
-- Or run: `TestPackageApp.exe --uninstall`
-
-## Building on macOS/Linux
-
-This is a Windows application (WPF), so it must be built and run on Windows. Options for Mac users:
-
-### Option 1: GitHub Actions (Recommended — Free)
-
-Push to this repo and the included GitHub Actions workflow will build automatically. Download the artifact from the Actions tab.
-
-### Option 2: Windows VM
-
-- Use [UTM](https://mac.getutm.app/) (free) or Parallels to run a Windows VM
-- Install .NET 8 SDK in the VM
-- Clone and build
-
-### Option 3: Windows Sandbox
-
-If you have Windows in a VM, use Windows Sandbox for isolated testing.
-
-## Testing Scenarios
-
-### Repackaging Validation
-1. Set `config.ini` with desired features enabled
-2. Run the installer while your repackaging tool captures
-3. Build the repackaged output
-4. Deploy and verify with the context viewer
-
-### Application Virtualization
-1. Capture the install with your virtualization tool
-2. Run the virtual package
-3. Verify file/registry isolation in the context viewer
-
-### Incomplete Uninstall Detection
-1. Set `IntentionallyLeaveFiles=true` and/or `IntentionallyLeaveRegistry=true`
-2. Install and uninstall
-3. Verify your tool detects the orphaned artifacts
+The Configurator will be in `dist\self-contained\configurator\`.
 
 ## Project Structure
 
 ```
 test-package/
-├── config.ini                          # Installation behavior configuration
+├── config.ini                          # Default configuration template
 ├── build.ps1                           # PowerShell build script
-├── build.cmd                           # Batch build script
 ├── TestPackage.sln                     # Visual Studio solution
 ├── src/
-│   ├── TestPackageInstaller/           # Wizard-style installer (WPF) → builds as test-package.exe
+│   ├── TestPackage.Core/               # Shared library
 │   │   ├── ConfigParser.cs             # INI file parser
-│   │   ├── InstallActions.cs           # All installation logic
-│   │   ├── MainWindow.xaml/xaml.cs     # Wizard UI
-│   │   └── App.xaml/xaml.cs            # Entry point, UAC handling
-│   └── TestPackageApp/                 # Installed application (WPF)
-│       ├── MainWindow.xaml/xaml.cs     # Context viewer UI
-│       ├── UninstallWindow.xaml/xaml.cs # Uninstall UI with logging
-│       └── App.xaml/xaml.cs            # Entry point, CLI args
-└── .github/
-    └── workflows/
-        └── build.yml                   # GitHub Actions CI
+│   │   ├── ConfigModel.cs             # Strongly-typed config model
+│   │   ├── ConfigWriter.cs            # INI file writer
+│   │   ├── InstallActions.cs           # Installation logic
+│   │   ├── InstallManifest.cs          # JSON manifest model
+│   │   └── UninstallActions.cs         # Uninstall logic
+│   ├── TestPackage.Configurator/       # GUI config editor (WPF)
+│   ├── TestPackageInstaller/           # Simulated installer wizard (WPF)
+│   ├── TestPackageApp/                 # Installed context viewer (WPF)
+│   └── TestPackageSmokeTest/           # CI smoke test
+├── installer/
+│   └── test-package-setup.nsi          # NSIS installer for the Configurator
+└── .github/workflows/
+    ├── build.yml                       # CI build
+    ├── release.yml                     # GitHub Releases
+    └── submit-winget.yml               # Manual winget submission
 ```
 
 ## Product Page
 
-For more information, visit the [Test Package product page](https://www.rwksystems.com/test-package/).
+For more information, visit the [TestPackage product page](https://www.rwksystems.com/test-package/).
 
 ## License
 
-This project is provided for testing purposes by [RWK Systems](https://rwksystems.com).
+[MIT License](LICENSE)
+
+## Roadmap
+
+Future enhancements under consideration:
+
+- **MSI output format** — Generate Windows Installer (.msi) packages using WiX Toolset for testing MSI-specific packaging workflows
+- **MSIX output format** — Generate MSIX packages for testing modern Windows app deployment and Microsoft Store scenarios
+- **Single-file installer** — Bundle config.ini inside the generated EXE so the output is a single file instead of three
+- **Live preview** — Show a preview of the simulated installer wizard as you configure options
+- **Configuration presets** — Built-in preset configurations for common test scenarios (e.g. "Service + Firewall", "Full Enterprise", "Minimal")
 
 ---
 
