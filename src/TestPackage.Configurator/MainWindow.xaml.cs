@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Navigation;
 using TestPackage.Core;
 
@@ -16,8 +17,18 @@ namespace TestPackage.Configurator
         public MainWindow()
         {
             InitializeComponent();
+            ClampToScreen();
             TxtOutputFolder.Text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             PopulateFromModel(_model);
+        }
+
+        private void ClampToScreen()
+        {
+            var workArea = SystemParameters.WorkArea;
+            if (Height > workArea.Height)
+                Height = workArea.Height;
+            if (Width > workArea.Width)
+                Width = workArea.Width;
         }
 
         private void PopulateFromModel(ConfigModel m)
@@ -48,6 +59,12 @@ namespace TestPackage.Configurator
             ChkShowRebootOption.IsChecked = m.ShowRebootOption;
             ChkShowActiveSetup.IsChecked = m.ShowActiveSetup;
             TxtEULAText.Text = m.EULAText;
+
+            // Wizard page defaults
+            ChkDefaultDesktopShortcut.IsChecked = m.CreateDesktopShortcut;
+            ChkDefaultStartMenuPin.IsChecked = m.PinToStartMenu;
+            ChkDefaultActiveSetup.IsChecked = m.ActiveSetupEnabled;
+            ChkDefaultReboot.IsChecked = m.PromptForReboot;
 
             // Components
             ComponentsList.Children.Clear();
@@ -105,9 +122,11 @@ namespace TestPackage.Configurator
             // UI
             TxtBannerColor.Text = m.BannerColor;
             TxtAccentColor.Text = m.AccentColor;
+            UpdateColorPreview(BannerColorPreview, m.BannerColor);
+            UpdateColorPreview(AccentColorPreview, m.AccentColor);
             ChkShowProgressBar.IsChecked = m.ShowProgressBar;
             ChkSimulateDelay.IsChecked = m.SimulateInstallDelay;
-            TxtDelayMs.Text = m.InstallDelayMs.ToString();
+            TxtDelaySec.Text = (m.InstallDelayMs / 1000.0).ToString("0.###");
         }
 
         private ConfigModel CollectToModel()
@@ -152,11 +171,11 @@ namespace TestPackage.Configurator
             m.TestFiles = TxtTestFiles.Text;
             m.RegistryEnabled = ChkRegistryEnabled.IsChecked == true;
             m.RegistryEntries = TxtRegistryEntries.Text;
-            m.CreateDesktopShortcut = ChkDesktopShortcut.IsChecked == true;
+            m.CreateDesktopShortcut = ChkDefaultDesktopShortcut.IsChecked == true;
             m.DesktopShortcutName = TxtDesktopShortcutName.Text.Trim();
             m.CreateStartMenuEntry = ChkStartMenuEntry.IsChecked == true;
             m.StartMenuFolder = TxtStartMenuFolder.Text.Trim();
-            m.PinToStartMenu = ChkPinToStartMenu.IsChecked == true;
+            m.PinToStartMenu = ChkDefaultStartMenuPin.IsChecked == true;
             m.FileAssociationsEnabled = ChkFileAssociations.IsChecked == true;
             m.FileAssociations = TxtFileAssociations.Text;
             m.ContextMenuEnabled = ChkContextMenu.IsChecked == true;
@@ -175,7 +194,7 @@ namespace TestPackage.Configurator
             m.FirewallRules = TxtFirewallRules.Text;
             m.ProtocolHandlersEnabled = ChkProtocolHandlers.IsChecked == true;
             m.ProtocolHandlers = TxtProtocolHandlers.Text;
-            m.ActiveSetupEnabled = ChkActiveSetup.IsChecked == true;
+            m.ActiveSetupEnabled = ChkDefaultActiveSetup.IsChecked == true;
             m.AppPathsEnabled = ChkAppPaths.IsChecked == true;
             m.StartupEnabled = ChkStartup.IsChecked == true;
             m.StartupMethod = GetComboText(CboStartupMethod);
@@ -188,16 +207,16 @@ namespace TestPackage.Configurator
             m.LeftoverFiles = TxtLeftoverFiles.Text;
             m.IntentionallyLeaveRegistry = ChkLeaveRegistry.IsChecked == true;
             m.LeftoverRegistry = TxtLeftoverRegistry.Text;
-            m.PromptForReboot = ChkPromptReboot.IsChecked == true;
+            m.PromptForReboot = ChkDefaultReboot.IsChecked == true;
             m.ForceReboot = ChkForceReboot.IsChecked == true;
 
             m.BannerColor = TxtBannerColor.Text.Trim();
             m.AccentColor = TxtAccentColor.Text.Trim();
             m.ShowProgressBar = ChkShowProgressBar.IsChecked == true;
             m.SimulateInstallDelay = ChkSimulateDelay.IsChecked == true;
-            m.InstallDelayMs = int.TryParse(TxtDelayMs.Text, out var d) ? d : 500;
+            m.InstallDelayMs = double.TryParse(TxtDelaySec.Text, out var sec) ? (int)(sec * 1000) : 500;
 
-            // Update AppPaths ExeName to match the app exe name
+            // Sync derived values
             m.AppPathsExeName = m.AppExeName;
 
             return m;
@@ -219,7 +238,7 @@ namespace TestPackage.Configurator
             var exeDir = AppDomain.CurrentDomain.BaseDirectory;
             var templatesDir = Path.Combine(exeDir, "templates");
             if (!Directory.Exists(templatesDir))
-                templatesDir = exeDir; // fallback for dev/debug
+                templatesDir = exeDir;
 
             var installerTemplate = Path.Combine(templatesDir, "TestPackageInstaller.exe");
             var appTemplate = Path.Combine(templatesDir, "TestPackageApp.exe");
@@ -235,16 +254,13 @@ namespace TestPackage.Configurator
             {
                 Directory.CreateDirectory(outputFolder);
 
-                // Copy and rename installer
                 var destInstaller = Path.Combine(outputFolder, model.InstallerExeName);
                 File.Copy(installerTemplate, destInstaller, true);
 
-                // Copy and rename app (the installer will copy this to the install dir)
                 var destApp = Path.Combine(outputFolder, model.AppExeName);
                 if (File.Exists(appTemplate))
                     File.Copy(appTemplate, destApp, true);
 
-                // Write config.ini
                 var configContent = ConfigWriter.Write(model);
                 File.WriteAllText(Path.Combine(outputFolder, "config.ini"), configContent);
 
@@ -254,7 +270,6 @@ namespace TestPackage.Configurator
                     "Point your packaging/automation tool at the installer EXE to test.",
                     "TestPackage Configurator", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                // Open the output folder
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = outputFolder,
@@ -348,6 +363,67 @@ namespace TestPackage.Configurator
             removeBtn.Click += (_, _) => ComponentsList.Children.Remove(panel);
             panel.Children.Add(removeBtn);
             ComponentsList.Children.Add(panel);
+        }
+
+        // Color picker support
+        private void BannerColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var color = ShowColorPicker(TxtBannerColor.Text);
+            if (color != null)
+            {
+                TxtBannerColor.Text = color;
+                UpdateColorPreview(BannerColorPreview, color);
+            }
+        }
+
+        private void AccentColorPicker_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var color = ShowColorPicker(TxtAccentColor.Text);
+            if (color != null)
+            {
+                TxtAccentColor.Text = color;
+                UpdateColorPreview(AccentColorPreview, color);
+            }
+        }
+
+        private void BannerColor_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            UpdateColorPreview(BannerColorPreview, TxtBannerColor.Text);
+        }
+
+        private void AccentColor_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            UpdateColorPreview(AccentColorPreview, TxtAccentColor.Text);
+        }
+
+        private static void UpdateColorPreview(Border preview, string hex)
+        {
+            try
+            {
+                preview.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
+            }
+            catch
+            {
+                preview.Background = Brushes.Transparent;
+            }
+        }
+
+        private static string? ShowColorPicker(string currentHex)
+        {
+            var dialog = new System.Windows.Forms.ColorDialog();
+            try
+            {
+                var c = (Color)ColorConverter.ConvertFromString(currentHex);
+                dialog.Color = System.Drawing.Color.FromArgb(c.R, c.G, c.B);
+            }
+            catch { }
+
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                var c = dialog.Color;
+                return $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+            }
+            return null;
         }
 
         private void Hyperlink_Navigate(object sender, RequestNavigateEventArgs e)
