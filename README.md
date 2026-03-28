@@ -117,7 +117,6 @@ Future enhancements under consideration:
 - **MSI output format** — Generate Windows Installer (.msi) packages using WiX Toolset for testing MSI-specific packaging workflows
 - **MSIX output format** — Generate MSIX packages for testing modern Windows app deployment and Microsoft Store scenarios
 - **Single-file installer** — Bundle config.ini inside the generated EXE so the output is a single file instead of three
-- **Live preview** — Show a preview of the simulated installer wizard as you configure options
 - **Configuration presets** — Built-in preset configurations for common test scenarios (e.g. "Service + Firewall", "Full Enterprise", "Minimal")
 
 ---
