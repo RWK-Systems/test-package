@@ -18,9 +18,11 @@ namespace TestPackageInstaller
 
             IsPreviewMode = e.Args.Contains("--preview", StringComparer.OrdinalIgnoreCase);
 
-            // Find config.ini next to the executable
+            // Find config.ini in _data subfolder first, then next to the executable
             var exeDir = AppDomain.CurrentDomain.BaseDirectory;
-            var configPath = Path.Combine(exeDir, "config.ini");
+            var configPath = Path.Combine(exeDir, "_data", "config.ini");
+            if (!File.Exists(configPath))
+                configPath = Path.Combine(exeDir, "config.ini");
 
             if (!File.Exists(configPath))
             {

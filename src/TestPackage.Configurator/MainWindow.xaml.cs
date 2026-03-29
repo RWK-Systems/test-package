@@ -571,10 +571,11 @@ namespace TestPackage.Configurator
             {
                 // Generate to a temp folder
                 var tempDir = Path.Combine(Path.GetTempPath(), "TestPackage_Preview_" + Guid.NewGuid().ToString("N")[..8]);
-                Directory.CreateDirectory(tempDir);
+                var tempDataDir = Path.Combine(tempDir, "_data");
+                Directory.CreateDirectory(tempDataDir);
 
                 File.Copy(installerTemplate, Path.Combine(tempDir, "TestPackageInstaller.exe"), true);
-                File.WriteAllText(Path.Combine(tempDir, "config.ini"), ConfigWriter.Write(model));
+                File.WriteAllText(Path.Combine(tempDataDir, "config.ini"), ConfigWriter.Write(model));
 
                 // Launch with --preview flag
                 Process.Start(new ProcessStartInfo
@@ -621,17 +622,20 @@ namespace TestPackage.Configurator
                 // Create a subfolder using the installer name (without extension)
                 var subfolderName = Path.GetFileNameWithoutExtension(model.InstallerExeName);
                 var packageFolder = Path.Combine(outputFolder, subfolderName);
-                Directory.CreateDirectory(packageFolder);
+                var dataFolder = Path.Combine(packageFolder, "_data");
+                Directory.CreateDirectory(dataFolder);
 
+                // Installer EXE goes in the root of the package folder
                 File.Copy(installerTemplate, Path.Combine(packageFolder, model.InstallerExeName), true);
+
+                // Companion files go in _data (installer reads from here at runtime)
                 if (File.Exists(appTemplate))
-                    File.Copy(appTemplate, Path.Combine(packageFolder, model.AppExeName), true);
-                File.WriteAllText(Path.Combine(packageFolder, "config.ini"), ConfigWriter.Write(model));
+                    File.Copy(appTemplate, Path.Combine(dataFolder, model.AppExeName), true);
+                File.WriteAllText(Path.Combine(dataFolder, "config.ini"), ConfigWriter.Write(model));
 
                 MessageBox.Show(
                     $"Installer generated!\n\n{packageFolder}\\{model.InstallerExeName}\n\n" +
-                    "Run this EXE to test your packaging workflow.\n" +
-                    "(The companion files in the folder are used by the installer at runtime.)",
+                    "Run this EXE to test your packaging workflow.",
                     "TestPackage Configurator", MessageBoxButton.OK, MessageBoxImage.Information);
                 Process.Start(new ProcessStartInfo { FileName = packageFolder, UseShellExecute = true });
             }

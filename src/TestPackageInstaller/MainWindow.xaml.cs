@@ -38,7 +38,9 @@ namespace TestPackageInstaller
 
         private void LoadConfig()
         {
-            var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.ini");
+            var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "_data", "config.ini");
+            if (!File.Exists(configPath))
+                configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.ini");
             _config = ConfigParser.Load(configPath);
 
             // Apply UI customization

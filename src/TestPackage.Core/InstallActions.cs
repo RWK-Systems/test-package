@@ -193,11 +193,15 @@ namespace TestPackage.Core
         private void CopyApplicationFiles(string installDir)
         {
             var sourceDir = AppDomain.CurrentDomain.BaseDirectory;
+            var dataDir = Path.Combine(sourceDir, "_data");
             var appExeName = AppExeName;
             var appBaseName = Path.GetFileNameWithoutExtension(appExeName);
 
+            // Look for app files in _data subfolder first, then same directory
+            var appSourceDir = Directory.Exists(dataDir) ? dataDir : sourceDir;
+
             // Copy the simulated app executable and its sidecar files
-            foreach (var file in Directory.GetFiles(sourceDir, $"{appBaseName}*"))
+            foreach (var file in Directory.GetFiles(appSourceDir, $"{appBaseName}*"))
             {
                 var destFile = Path.Combine(installDir, Path.GetFileName(file));
                 File.Copy(file, destFile, true);
@@ -208,7 +212,7 @@ namespace TestPackage.Core
             // Copy runtime deps if present
             foreach (var pattern in new[] { "*.dll", "*.runtimeconfig.json", "*.deps.json" })
             {
-                foreach (var file in Directory.GetFiles(sourceDir, pattern))
+                foreach (var file in Directory.GetFiles(appSourceDir, pattern))
                 {
                     var destFile = Path.Combine(installDir, Path.GetFileName(file));
                     if (!File.Exists(destFile))
@@ -219,8 +223,10 @@ namespace TestPackage.Core
                 }
             }
 
-            // Copy config.ini
-            var configSrc = Path.Combine(sourceDir, "config.ini");
+            // Copy config.ini from _data or same directory
+            var configSrc = Path.Combine(dataDir, "config.ini");
+            if (!File.Exists(configSrc))
+                configSrc = Path.Combine(sourceDir, "config.ini");
             if (File.Exists(configSrc))
             {
                 var configDest = Path.Combine(installDir, "config.ini");
