@@ -1,14 +1,14 @@
 ; =============================================================================
-; TestPackage Configurator Installer (NSIS)
+; TestPackage Installer (NSIS)
 ; =============================================================================
-; Installs the TestPackage Configurator tool, which lets users design and
-; generate simulated installers for testing repackaging and deployment.
+; Installs TestPackage, which lets users design and generate simulated
+; installers for testing repackaging and deployment.
 ; =============================================================================
 
 !include "MUI2.nsh"
 
 ; --- Product Info ---
-!define PRODUCT_NAME "TestPackage Configurator"
+!define PRODUCT_NAME "TestPackage"
 !define PRODUCT_VERSION "2.0.0"
 !define PRODUCT_PUBLISHER "RWK Systems"
 !define PRODUCT_WEB_SITE "https://rwksystems.com"
@@ -18,8 +18,8 @@
 
 ; --- Installer Settings ---
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "..\dist\TestPackageConfiguratorSetup.exe"
-InstallDir "$PROGRAMFILES\RWK Systems\TestPackage Configurator"
+OutFile "..\dist\TestPackageSetup.exe"
+InstallDir "$PROGRAMFILES\RWK Systems\TestPackage"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 RequestExecutionLevel admin
 SetCompressor /SOLID lzma
@@ -33,7 +33,7 @@ SetCompressor /SOLID lzma
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !define MUI_FINISHPAGE_RUN "$INSTDIR\TestPackageConfigurator.exe"
-!define MUI_FINISHPAGE_RUN_TEXT "Launch TestPackage Configurator"
+!define MUI_FINISHPAGE_RUN_TEXT "Launch TestPackage"
 !insertmacro MUI_PAGE_FINISH
 
 !insertmacro MUI_UNPAGE_CONFIRM
@@ -62,8 +62,8 @@ Section "Install"
 
     ; Shortcuts
     CreateDirectory "$SMPROGRAMS\RWK Systems"
-    CreateShortCut "$SMPROGRAMS\RWK Systems\TestPackage Configurator.lnk" "$INSTDIR\TestPackageConfigurator.exe" "" "$INSTDIR\TestPackageConfigurator.exe" 0
-    CreateShortCut "$SMPROGRAMS\RWK Systems\Uninstall TestPackage Configurator.lnk" "$INSTDIR\uninstall.exe"
+    CreateShortCut "$SMPROGRAMS\RWK Systems\TestPackage.lnk" "$INSTDIR\TestPackageConfigurator.exe" "" "$INSTDIR\TestPackageConfigurator.exe" 0
+    CreateShortCut "$SMPROGRAMS\RWK Systems\Uninstall TestPackage.lnk" "$INSTDIR\uninstall.exe"
 
     ; Registry
     WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "" "$INSTDIR\TestPackageConfigurator.exe"
@@ -90,8 +90,8 @@ Section "Uninstall"
     RMDir "$INSTDIR"
 
     ; Remove shortcuts
-    Delete "$SMPROGRAMS\RWK Systems\TestPackage Configurator.lnk"
-    Delete "$SMPROGRAMS\RWK Systems\Uninstall TestPackage Configurator.lnk"
+    Delete "$SMPROGRAMS\RWK Systems\TestPackage.lnk"
+    Delete "$SMPROGRAMS\RWK Systems\Uninstall TestPackage.lnk"
     RMDir "$SMPROGRAMS\RWK Systems"
 
     ; Remove registry

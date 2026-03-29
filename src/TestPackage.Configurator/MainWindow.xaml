@@ -1,7 +1,7 @@
 <Window x:Class="TestPackage.Configurator.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="TestPackage Configurator" Width="920" Height="650"
+        Title="TestPackage" Width="920" Height="650"
         WindowStartupLocation="CenterScreen"
         Background="#F2F3F5">
     <Grid>
@@ -20,7 +20,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="TestPackage Configurator" FontSize="20" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock Text="TestPackage" FontSize="20" FontWeight="Bold" Foreground="White"/>
                     <TextBlock Text="Design and generate simulated installers for testing" FontSize="11" Foreground="#CCE5FF" Margin="0,2,0,0"/>
                 </StackPanel>
                 <TextBlock Grid.Column="1" Text="v2.0.0" Foreground="#99CCFF" FontSize="11" VerticalAlignment="Center"/>

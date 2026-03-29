@@ -67,7 +67,7 @@ Change the configuration and generate again. Need to add a service? Toggle it on
 
 ## Download
 
-TestPackage Configurator is open source and free.
+TestPackage is open source and free.
 
 **[Download the latest release](https://github.com/RWK-Systems/test-package/releases/latest)**
 

@@ -35,7 +35,7 @@ jobs:
     - name: Verify release exists
       shell: pwsh
       run: |
-        $url = "https://github.com/${{ github.repository }}/releases/download/${{ inputs.tag }}/TestPackageConfiguratorSetup.exe"
+        $url = "https://github.com/${{ github.repository }}/releases/download/${{ inputs.tag }}/TestPackageSetup.exe"
         try {
           $response = Invoke-WebRequest -Uri $url -Method Head -MaximumRedirection 5
           Write-Host "Release asset verified: $url"
@@ -50,6 +50,6 @@ jobs:
         Invoke-WebRequest -Uri https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
         .\wingetcreate.exe update RWKSystems.TestPackage `
           --version ${{ steps.version.outputs.VERSION }} `
-          --urls "https://github.com/${{ github.repository }}/releases/download/${{ inputs.tag }}/TestPackageConfiguratorSetup.exe" `
+          --urls "https://github.com/${{ github.repository }}/releases/download/${{ inputs.tag }}/TestPackageSetup.exe" `
           --submit `
           --token ${{ secrets.WINGET_CREATE_PAT }}

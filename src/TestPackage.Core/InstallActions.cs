@@ -123,7 +123,7 @@ namespace TestPackage.Core
             sb.AppendLine($"{appName} v{appVersion}");
             sb.AppendLine(new string('=', 60));
             sb.AppendLine();
-            sb.AppendLine("This is a simulated installation created by TestPackage Configurator.");
+            sb.AppendLine("This is a simulated installation created by TestPackage.");
             sb.AppendLine("It was designed to test software packaging, deployment, and");
             sb.AppendLine("virtualization tools by exercising real Windows installer behaviors.");
             sb.AppendLine();

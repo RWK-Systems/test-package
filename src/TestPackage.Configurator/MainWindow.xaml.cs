@@ -563,7 +563,7 @@ namespace TestPackage.Configurator
             if (!File.Exists(installerTemplate))
             {
                 MessageBox.Show("Template not found. Cannot launch preview.\n\nEnsure the templates directory exists alongside the Configurator.",
-                    "TestPackage Configurator", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    "TestPackage", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -588,7 +588,7 @@ namespace TestPackage.Configurator
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to launch preview:\n{ex.Message}",
-                    "TestPackage Configurator", MessageBoxButton.OK, MessageBoxImage.Error);
+                    "TestPackage", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -600,7 +600,7 @@ namespace TestPackage.Configurator
             var outputFolder = TxtOutputFolder.Text.Trim();
             if (string.IsNullOrEmpty(outputFolder))
             {
-                MessageBox.Show("Please select an output folder.", "TestPackage Configurator", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Please select an output folder.", "TestPackage", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -613,7 +613,7 @@ namespace TestPackage.Configurator
 
             if (!File.Exists(installerTemplate))
             {
-                MessageBox.Show($"Template not found:\n{installerTemplate}", "TestPackage Configurator", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Template not found:\n{installerTemplate}", "TestPackage", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -636,12 +636,12 @@ namespace TestPackage.Configurator
                 MessageBox.Show(
                     $"Installer generated!\n\n{packageFolder}\\{model.InstallerExeName}\n\n" +
                     "Run this EXE to test your packaging workflow.",
-                    "TestPackage Configurator", MessageBoxButton.OK, MessageBoxImage.Information);
+                    "TestPackage", MessageBoxButton.OK, MessageBoxImage.Information);
                 Process.Start(new ProcessStartInfo { FileName = packageFolder, UseShellExecute = true });
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed:\n{ex.Message}", "TestPackage Configurator", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Failed:\n{ex.Message}", "TestPackage", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -651,7 +651,7 @@ namespace TestPackage.Configurator
             if (dialog.ShowDialog() == true)
             {
                 try { _model = ConfigModel.FromParser(ConfigParser.Load(dialog.FileName)); PopulateFromModel(_model); }
-                catch (Exception ex) { MessageBox.Show($"Failed:\n{ex.Message}", "TestPackage Configurator", MessageBoxButton.OK, MessageBoxImage.Error); }
+                catch (Exception ex) { MessageBox.Show($"Failed:\n{ex.Message}", "TestPackage", MessageBoxButton.OK, MessageBoxImage.Error); }
             }
         }
 
@@ -661,7 +661,7 @@ namespace TestPackage.Configurator
             if (dialog.ShowDialog() == true)
             {
                 try { File.WriteAllText(dialog.FileName, ConfigWriter.Write(CollectToModel())); }
-                catch (Exception ex) { MessageBox.Show($"Failed:\n{ex.Message}", "TestPackage Configurator", MessageBoxButton.OK, MessageBoxImage.Error); }
+                catch (Exception ex) { MessageBox.Show($"Failed:\n{ex.Message}", "TestPackage", MessageBoxButton.OK, MessageBoxImage.Error); }
             }
         }
 

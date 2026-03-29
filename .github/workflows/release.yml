@@ -93,29 +93,29 @@ jobs:
       id: hash
       shell: pwsh
       run: |
-        $hash = (Get-FileHash "dist\TestPackageConfiguratorSetup.exe" -Algorithm SHA256).Hash
+        $hash = (Get-FileHash "dist\TestPackageSetup.exe" -Algorithm SHA256).Hash
         echo "SHA256=$hash" >> $env:GITHUB_OUTPUT
         echo "Installer SHA256: $hash"
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        name: TestPackage Configurator v${{ steps.version.outputs.VERSION }}
+        name: TestPackage v${{ steps.version.outputs.VERSION }}
         body: |
-          ## TestPackage Configurator v${{ steps.version.outputs.VERSION }}
+          ## TestPackage v${{ steps.version.outputs.VERSION }}
 
           Design and generate simulated installers for testing repackaging, application virtualization, and deployment solutions.
 
           ### What's New in v2.0
 
-          - **TestPackage Configurator** — A GUI tool to design your test scenarios
+          - **Configurator GUI** — Design your test scenarios visually
           - **Generate Installer** — One click to create a simulated setup EXE
           - Configurable EXE names (default: YourSimulatedSetup.exe / YourSimulatedApp.exe)
           - All installer behaviors configurable via the Configurator UI
 
           ### Download
 
-          **[TestPackageConfiguratorSetup.exe](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/TestPackageConfiguratorSetup.exe)** — Self-contained installer (no .NET runtime required)
+          **[TestPackageSetup.exe](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/TestPackageSetup.exe)** — Self-contained installer (no .NET runtime required)
 
           ### Install via winget
 
@@ -129,6 +129,6 @@ jobs:
           ```
 
           For more information, visit the [product page](https://www.rwksystems.com/test-package/).
-        files: dist/TestPackageConfiguratorSetup.exe
+        files: dist/TestPackageSetup.exe
         draft: false
         prerelease: ${{ steps.version.outputs.PRERELEASE == 'true' }}

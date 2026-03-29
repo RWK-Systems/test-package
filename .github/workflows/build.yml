@@ -69,5 +69,5 @@ jobs:
     - name: Upload Installer
       uses: actions/upload-artifact@v4
       with:
-        name: TestPackageConfiguratorSetup
-        path: dist/TestPackageConfiguratorSetup.exe
+        name: TestPackageSetup
+        path: dist/TestPackageSetup.exe

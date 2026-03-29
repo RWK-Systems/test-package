@@ -5,7 +5,7 @@ PackageVersion: 2.0.0
 Installers:
   - Architecture: x64
     InstallerType: nullsoft
-    InstallerUrl: https://github.com/RWK-Systems/test-package/releases/download/v2.0.0/TestPackageConfiguratorSetup.exe
+    InstallerUrl: https://github.com/RWK-Systems/test-package/releases/download/v2.0.0/TestPackageSetup.exe
     InstallerSha256: PLACEHOLDER
     InstallerSwitches:
       Silent: /S

@@ -61,7 +61,7 @@ winget install RWKSystems.TestPackage
 
 ### Option 2: Download
 
-Download **TestPackageConfiguratorSetup.exe** from the [latest GitHub release](https://github.com/RWK-Systems/test-package/releases/latest).
+Download **TestPackageSetup.exe** from the [latest GitHub release](https://github.com/RWK-Systems/test-package/releases/latest).
 
 ### Option 3: Build from Source
 
