@@ -313,14 +313,55 @@ namespace TestPackage.Configurator
             return string.Join(separator, items);
         }
 
-        private void PopulatePipeSeparatedList(StackPanel list, string data, Action<string[]> addRow)
+        private void PopulatePipeSeparatedList(StackPanel list, string data, int fieldsPerEntry, Action<string[]> addRow)
         {
             list.Children.Clear();
             if (string.IsNullOrWhiteSpace(data)) return;
-            foreach (var item in data.Split(',').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)))
+
+            // Split all fields by pipe, then group into entries of the expected size.
+            // This handles cases where field values contain commas (e.g. icon indices "app.exe,0")
+            // by first splitting the whole string on pipes and regrouping.
+            var allParts = data.Split('|').Select(s => s.Trim()).ToArray();
+
+            // Each entry has fieldsPerEntry pipe-separated fields.
+            // The comma separating entries appears at the boundary between the last field
+            // of one entry and the first field of the next.
+            // Reassemble then split properly: find commas that are between entries.
+            var entries = new List<string[]>();
+            var currentFields = new List<string>();
+
+            foreach (var part in allParts)
             {
-                var parts = item.Split('|');
-                addRow(parts);
+                if (currentFields.Count == fieldsPerEntry - 1)
+                {
+                    // This is the last field of the current entry.
+                    // It may contain a comma followed by the first field of the next entry.
+                    var commaIdx = part.LastIndexOf(',');
+                    if (commaIdx > 0 && currentFields.Count == fieldsPerEntry - 1)
+                    {
+                        currentFields.Add(part[..commaIdx].Trim());
+                        entries.Add(currentFields.ToArray());
+                        currentFields = new List<string> { part[(commaIdx + 1)..].Trim() };
+                    }
+                    else
+                    {
+                        currentFields.Add(part);
+                        entries.Add(currentFields.ToArray());
+                        currentFields = new List<string>();
+                    }
+                }
+                else
+                {
+                    currentFields.Add(part);
+                }
+            }
+            if (currentFields.Count > 0)
+                entries.Add(currentFields.ToArray());
+
+            foreach (var entry in entries)
+            {
+                if (entry.Any(f => !string.IsNullOrEmpty(f)))
+                    addRow(entry);
             }
         }
 
@@ -361,10 +402,10 @@ namespace TestPackage.Configurator
                 AddComponentRow(c.Name, c.DefaultSelected);
 
             ChkTestFilesEnabled.IsChecked = m.TestFilesEnabled;
-            PopulatePipeSeparatedList(TestFilesList, m.TestFiles, p => AddTestFileRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? ""));
+            PopulatePipeSeparatedList(TestFilesList, m.TestFiles, 2, p => AddTestFileRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? ""));
 
             ChkRegistryEnabled.IsChecked = m.RegistryEnabled;
-            PopulatePipeSeparatedList(RegistryEntriesList, m.RegistryEntries, p => AddRegistryEntryRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? "", p.ElementAtOrDefault(2) ?? "REG_SZ", p.ElementAtOrDefault(3) ?? ""));
+            PopulatePipeSeparatedList(RegistryEntriesList, m.RegistryEntries, 4, p => AddRegistryEntryRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? "", p.ElementAtOrDefault(2) ?? "REG_SZ", p.ElementAtOrDefault(3) ?? ""));
 
             ChkDesktopShortcut.IsChecked = m.CreateDesktopShortcut;
             TxtDesktopShortcutName.Text = m.DesktopShortcutName;
@@ -373,13 +414,13 @@ namespace TestPackage.Configurator
             ChkPinToStartMenu.IsChecked = m.PinToStartMenu;
 
             ChkFileAssociations.IsChecked = m.FileAssociationsEnabled;
-            PopulatePipeSeparatedList(FileAssociationsList, m.FileAssociations, p => AddFileAssociationRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? "", p.ElementAtOrDefault(2) ?? "", p.ElementAtOrDefault(3) ?? ""));
+            PopulatePipeSeparatedList(FileAssociationsList, m.FileAssociations, 4, p => AddFileAssociationRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? "", p.ElementAtOrDefault(2) ?? "", p.ElementAtOrDefault(3) ?? ""));
 
             ChkContextMenu.IsChecked = m.ContextMenuEnabled;
-            PopulatePipeSeparatedList(ContextMenuList, m.ContextMenuEntries, p => AddContextMenuRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? "", p.ElementAtOrDefault(2) ?? ""));
+            PopulatePipeSeparatedList(ContextMenuList, m.ContextMenuEntries, 3, p => AddContextMenuRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? "", p.ElementAtOrDefault(2) ?? ""));
 
             ChkEnvVars.IsChecked = m.EnvironmentVariablesEnabled;
-            PopulatePipeSeparatedList(EnvVarsList, m.EnvironmentVariables, p => AddEnvVarRow(p.ElementAtOrDefault(0) ?? "User", p.ElementAtOrDefault(1) ?? "", p.ElementAtOrDefault(2) ?? ""));
+            PopulatePipeSeparatedList(EnvVarsList, m.EnvironmentVariables, 3, p => AddEnvVarRow(p.ElementAtOrDefault(0) ?? "User", p.ElementAtOrDefault(1) ?? "", p.ElementAtOrDefault(2) ?? ""));
 
             ChkService.IsChecked = m.ServicesEnabled;
             TxtServiceName.Text = m.ServiceName;
@@ -390,10 +431,10 @@ namespace TestPackage.Configurator
             SelectComboItem(CboTaskSchedule, m.TaskSchedule);
 
             ChkFirewall.IsChecked = m.FirewallRulesEnabled;
-            PopulatePipeSeparatedList(FirewallRulesList, m.FirewallRules, p => AddFirewallRuleRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? "In", p.ElementAtOrDefault(2) ?? "Allow", p.ElementAtOrDefault(3) ?? "TCP", p.ElementAtOrDefault(4) ?? ""));
+            PopulatePipeSeparatedList(FirewallRulesList, m.FirewallRules, 5, p => AddFirewallRuleRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? "In", p.ElementAtOrDefault(2) ?? "Allow", p.ElementAtOrDefault(3) ?? "TCP", p.ElementAtOrDefault(4) ?? ""));
 
             ChkProtocolHandlers.IsChecked = m.ProtocolHandlersEnabled;
-            PopulatePipeSeparatedList(ProtocolHandlersList, m.ProtocolHandlers, p => AddProtocolHandlerRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? ""));
+            PopulatePipeSeparatedList(ProtocolHandlersList, m.ProtocolHandlers, 2, p => AddProtocolHandlerRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? ""));
 
             ChkActiveSetup.IsChecked = m.ActiveSetupEnabled;
             ChkAppPaths.IsChecked = m.AppPathsEnabled;
@@ -582,7 +623,10 @@ namespace TestPackage.Configurator
                     File.Copy(appTemplate, Path.Combine(outputFolder, model.AppExeName), true);
                 File.WriteAllText(Path.Combine(outputFolder, "config.ini"), ConfigWriter.Write(model));
 
-                MessageBox.Show($"Installer generated!\n\n{outputFolder}\n\n  {model.InstallerExeName}\n  {model.AppExeName}\n  config.ini",
+                MessageBox.Show(
+                    $"Installer generated!\n\n{outputFolder}\\{model.InstallerExeName}\n\n" +
+                    "Run this EXE to test your packaging workflow.\n" +
+                    "(The companion files in the folder are used by the installer at runtime.)",
                     "TestPackage Configurator", MessageBoxButton.OK, MessageBoxImage.Information);
                 Process.Start(new ProcessStartInfo { FileName = outputFolder, UseShellExecute = true });
             }
