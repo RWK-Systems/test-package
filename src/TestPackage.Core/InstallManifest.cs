@@ -31,8 +31,11 @@ namespace TestPackage.Core
         public bool ContextMenuRegistered { get; set; }
         public bool EnvironmentVariablesSet { get; set; }
         public bool ServiceInstalled { get; set; }
+        public string ServiceName { get; set; } = "";
         public bool ScheduledTaskCreated { get; set; }
+        public string ScheduledTaskName { get; set; } = "";
         public bool FirewallRulesCreated { get; set; }
+        public List<string> FirewallRuleNames { get; set; } = new();
         public bool ProtocolHandlerRegistered { get; set; }
         public bool StartupEntryCreated { get; set; }
         public bool FontInstalled { get; set; }

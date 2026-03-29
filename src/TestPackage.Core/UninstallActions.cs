@@ -110,11 +110,12 @@ namespace TestPackage.Core
         public void RemoveService(InstallManifest manifest)
         {
             if (!manifest.ServiceInstalled) return;
+            var name = !string.IsNullOrEmpty(manifest.ServiceName) ? manifest.ServiceName : "TestPackageSvc";
             try
             {
-                RunProcess("sc.exe", "stop TestPackageSvc");
-                RunProcess("sc.exe", "delete TestPackageSvc");
-                _log("  Removed service: TestPackageSvc");
+                RunProcess("sc.exe", $"stop \"{name}\"");
+                RunProcess("sc.exe", $"delete \"{name}\"");
+                _log($"  Removed service: {name}");
             }
             catch (Exception ex)
             {
@@ -125,10 +126,11 @@ namespace TestPackage.Core
         public void RemoveScheduledTasks(InstallManifest manifest)
         {
             if (!manifest.ScheduledTaskCreated) return;
+            var name = !string.IsNullOrEmpty(manifest.ScheduledTaskName) ? manifest.ScheduledTaskName : "TestPackage Maintenance";
             try
             {
-                RunProcess("schtasks.exe", "/Delete /TN \"TestPackage Maintenance\" /F");
-                _log("  Removed scheduled task");
+                RunProcess("schtasks.exe", $"/Delete /TN \"{name}\" /F");
+                _log($"  Removed scheduled task: {name}");
             }
             catch (Exception ex)
             {
@@ -139,15 +141,20 @@ namespace TestPackage.Core
         public void RemoveFirewallRules(InstallManifest manifest)
         {
             if (!manifest.FirewallRulesCreated) return;
-            try
+            var names = manifest.FirewallRuleNames.Count > 0
+                ? manifest.FirewallRuleNames
+                : new List<string> { "TestPackage Inbound", "TestPackage Outbound" };
+            foreach (var name in names)
             {
-                RunProcess("netsh.exe", "advfirewall firewall delete rule name=\"TestPackage Inbound\"");
-                RunProcess("netsh.exe", "advfirewall firewall delete rule name=\"TestPackage Outbound\"");
-                _log("  Removed firewall rules");
-            }
-            catch (Exception ex)
-            {
-                _log($"  Warning: {ex.Message}");
+                try
+                {
+                    RunProcess("netsh.exe", $"advfirewall firewall delete rule name=\"{name}\"");
+                    _log($"  Removed firewall rule: {name}");
+                }
+                catch (Exception ex)
+                {
+                    _log($"  Warning: {ex.Message}");
+                }
             }
         }
 
@@ -177,19 +184,20 @@ namespace TestPackage.Core
         public void RemoveStartupEntries(InstallManifest manifest)
         {
             if (!manifest.StartupEntryCreated) return;
+            var appName = !string.IsNullOrEmpty(manifest.AppName) ? manifest.AppName : "TestPackage";
             try
             {
                 using var key = Registry.CurrentUser.OpenSubKey(
                     @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-                key?.DeleteValue("TestPackage", false);
-                _log("  Removed startup entry");
+                key?.DeleteValue(appName, false);
+                _log($"  Removed startup entry: {appName}");
             }
             catch { }
             try
             {
                 using var key = Registry.LocalMachine.OpenSubKey(
                     @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-                key?.DeleteValue("TestPackage", false);
+                key?.DeleteValue(appName, false);
             }
             catch { }
         }

@@ -36,7 +36,7 @@ namespace TestPackage.Core
             _manifest.InstalledBy = $@"{Environment.UserDomainName}\{Environment.UserName}";
             _manifest.InstallDate = DateTime.Now;
             _manifest.AppName = _config.Get("General", "AppName", "TestPackage");
-            _manifest.AppVersion = _config.Get("General", "AppVersion", "1.0.0");
+            _manifest.AppVersion = _config.Get("General", "AppVersion", "2.0.0");
             _manifest.AppGUID = _config.Get("General", "AppGUID");
             _manifest.Components = selectedComponents;
             _manifest.DesktopShortcut = desktopShortcut;
@@ -118,7 +118,7 @@ namespace TestPackage.Core
         {
             var sb = new System.Text.StringBuilder();
             var appName = _config.Get("General", "AppName", "TestPackage");
-            var appVersion = _config.Get("General", "AppVersion", "1.0.0");
+            var appVersion = _config.Get("General", "AppVersion", "2.0.0");
 
             sb.AppendLine($"{appName} v{appVersion}");
             sb.AppendLine(new string('=', 60));
@@ -563,6 +563,7 @@ namespace TestPackage.Core
                 RunProcess("sc.exe", $"description \"{serviceName}\" \"{description}\"");
 
                 _manifest.ServiceInstalled = true;
+                _manifest.ServiceName = serviceName;
                 _log($"Installed service: {serviceName}");
             }
             catch (Exception ex)
@@ -595,6 +596,7 @@ namespace TestPackage.Core
 
                 RunProcess("schtasks.exe", args);
                 _manifest.ScheduledTaskCreated = true;
+                _manifest.ScheduledTaskName = taskName;
                 _log($"Created scheduled task: {taskName}");
             }
             catch (Exception ex)
@@ -621,6 +623,7 @@ namespace TestPackage.Core
                 {
                     RunProcess("netsh.exe",
                         $"advfirewall firewall add rule name=\"{name}\" dir={direction} action={action} protocol={protocol} localport={port}");
+                    _manifest.FirewallRuleNames.Add(name);
                     _log($"Created firewall rule: {name}");
                 }
                 catch (Exception ex)
@@ -731,7 +734,7 @@ namespace TestPackage.Core
         private void RegisterUninstaller(string installDir)
         {
             var appName = _config.Get("General", "AppName", "TestPackage");
-            var appVersion = _config.Get("General", "AppVersion", "1.0.0");
+            var appVersion = _config.Get("General", "AppVersion", "2.0.0");
             var publisher = _config.Get("General", "AppPublisher", "RWK Systems");
             var guid = _config.Get("General", "AppGUID");
             var exePath = Path.Combine(installDir, AppExeName);

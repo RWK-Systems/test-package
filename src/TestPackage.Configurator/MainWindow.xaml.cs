@@ -250,10 +250,11 @@ namespace TestPackage.Configurator
             ProtocolHandlersList.Children.Add(grid);
         }
 
-        private static TextBox MakeTextBox(string text, string placeholder)
+        private TextBox MakeTextBox(string text, string placeholder)
         {
-            var tb = new TextBox { Text = text, FontSize = 11, Padding = new Thickness(4, 3, 4, 3),
-                                   BorderBrush = new SolidColorBrush(Color.FromRgb(0xD0, 0xD0, 0xD0)), BorderThickness = new Thickness(1) };
+            var tb = new TextBox { Text = text };
+            tb.SetResourceReference(StyleProperty, "FieldTextBox");
+            tb.FontSize = 12;
             if (string.IsNullOrEmpty(text))
             {
                 tb.Foreground = Brushes.Gray;
@@ -617,18 +618,22 @@ namespace TestPackage.Configurator
 
             try
             {
-                Directory.CreateDirectory(outputFolder);
-                File.Copy(installerTemplate, Path.Combine(outputFolder, model.InstallerExeName), true);
+                // Create a subfolder using the installer name (without extension)
+                var subfolderName = Path.GetFileNameWithoutExtension(model.InstallerExeName);
+                var packageFolder = Path.Combine(outputFolder, subfolderName);
+                Directory.CreateDirectory(packageFolder);
+
+                File.Copy(installerTemplate, Path.Combine(packageFolder, model.InstallerExeName), true);
                 if (File.Exists(appTemplate))
-                    File.Copy(appTemplate, Path.Combine(outputFolder, model.AppExeName), true);
-                File.WriteAllText(Path.Combine(outputFolder, "config.ini"), ConfigWriter.Write(model));
+                    File.Copy(appTemplate, Path.Combine(packageFolder, model.AppExeName), true);
+                File.WriteAllText(Path.Combine(packageFolder, "config.ini"), ConfigWriter.Write(model));
 
                 MessageBox.Show(
-                    $"Installer generated!\n\n{outputFolder}\\{model.InstallerExeName}\n\n" +
+                    $"Installer generated!\n\n{packageFolder}\\{model.InstallerExeName}\n\n" +
                     "Run this EXE to test your packaging workflow.\n" +
                     "(The companion files in the folder are used by the installer at runtime.)",
                     "TestPackage Configurator", MessageBoxButton.OK, MessageBoxImage.Information);
-                Process.Start(new ProcessStartInfo { FileName = outputFolder, UseShellExecute = true });
+                Process.Start(new ProcessStartInfo { FileName = packageFolder, UseShellExecute = true });
             }
             catch (Exception ex)
             {

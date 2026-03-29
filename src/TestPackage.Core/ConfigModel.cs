@@ -11,7 +11,7 @@ namespace TestPackage.Core
     {
         // General
         public string AppName { get; set; } = "TestPackage";
-        public string AppVersion { get; set; } = "1.0.0";
+        public string AppVersion { get; set; } = "2.0.0";
         public string AppPublisher { get; set; } = "RWK Systems";
         public string AppURL { get; set; } = "https://rwksystems.com";
         public string AppGUID { get; set; } = "{E8A3B025-7F4D-4B1A-9C6E-2D8F5A1B3C4D}";
@@ -56,7 +56,7 @@ namespace TestPackage.Core
 
         // Registry
         public bool RegistryEnabled { get; set; } = true;
-        public string RegistryEntries { get; set; } = @"HKCU\Software\RWK Systems\TestPackage|InstallDate|REG_SZ|%DATE%,HKCU\Software\RWK Systems\TestPackage|Version|REG_SZ|1.0.0,HKLM\Software\RWK Systems\TestPackage|InstallPath|REG_SZ|%InstallDir%";
+        public string RegistryEntries { get; set; } = @"HKCU\Software\RWK Systems\TestPackage|InstallDate|REG_SZ|%DATE%,HKCU\Software\RWK Systems\TestPackage|Version|REG_SZ|2.0.0,HKLM\Software\RWK Systems\TestPackage|InstallPath|REG_SZ|%InstallDir%";
 
         // Shortcuts
         public bool CreateDesktopShortcut { get; set; } = true;
@@ -75,7 +75,7 @@ namespace TestPackage.Core
 
         // Environment Variables
         public bool EnvironmentVariablesEnabled { get; set; }
-        public string EnvironmentVariables { get; set; } = @"User|TESTPACKAGE_HOME|%InstallDir%,User|TESTPACKAGE_VERSION|1.0.0";
+        public string EnvironmentVariables { get; set; } = @"User|TESTPACKAGE_HOME|%InstallDir%,User|TESTPACKAGE_VERSION|2.0.0";
 
         // Services
         public bool ServicesEnabled { get; set; }
