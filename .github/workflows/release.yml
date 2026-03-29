@@ -63,6 +63,7 @@ jobs:
         certificate-profile-name: ${{ vars.AZURE_SIGNING_PROFILE }}
         files-folder: dist\self-contained
         files-folder-filter: exe
+        files-folder-depth: 4
         file-digest: SHA256
         timestamp-rfc3161: http://timestamp.acs.microsoft.com
         timestamp-digest: SHA256
