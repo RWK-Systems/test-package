@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Principal;
 using System.Text.Json;
-using TestPackageInstaller;
+using TestPackage.Core;
 
 namespace TestPackageSmokeTest
 {

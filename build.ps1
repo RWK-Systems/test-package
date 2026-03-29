@@ -1,5 +1,5 @@
-# TestPackage Build Script
-# Builds the installer and app, then packages them together.
+# TestPackage v2.0 Build Script
+# Builds the Configurator, SimulatedInstaller, SimulatedApp, and packages them.
 # Requires: .NET 8 SDK (https://dotnet.microsoft.com/download/dotnet/8.0)
 
 param(
@@ -12,63 +12,60 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== TestPackage Build ===" -ForegroundColor Cyan
+Write-Host "=== TestPackage v2.0 Build ===" -ForegroundColor Cyan
 Write-Host ""
 
 # Clean output
 if (Test-Path $OutputDir) {
     Remove-Item $OutputDir -Recurse -Force
 }
-New-Item -ItemType Directory -Path $OutputDir | Out-Null
 
-$publishArgs = @(
-    "--configuration", $Configuration,
-    "--runtime", $Runtime,
-    "--output", $(if ($SelfContained) { "$OutputDir\self-contained" } else { "$OutputDir\publish" })
-)
+$scFlag = if ($SelfContained) { "true" } else { "false" }
+$outSubdir = if ($SelfContained) { "self-contained" } else { "publish" }
 
 if ($SelfContained) {
-    $publishArgs += "--self-contained", "true"
-    Write-Host "Building self-contained (no .NET runtime required on target)" -ForegroundColor Yellow
+    Write-Host "Building self-contained (no .NET runtime required)" -ForegroundColor Yellow
 } else {
-    $publishArgs += "--self-contained", "false"
-    Write-Host "Building framework-dependent (.NET 8 runtime required on target)" -ForegroundColor Yellow
+    Write-Host "Building framework-dependent (.NET 8 required)" -ForegroundColor Yellow
 }
 
-# Build TestPackageApp first (installer copies it)
+# 1. Build template files (SimulatedApp + SimulatedInstaller)
 Write-Host ""
-Write-Host "Building TestPackageApp..." -ForegroundColor Green
-dotnet publish src\TestPackageApp\TestPackageApp.csproj @publishArgs
+Write-Host "Building SimulatedApp (template)..." -ForegroundColor Green
+dotnet publish src\TestPackageApp\TestPackageApp.csproj -c $Configuration -r $Runtime --self-contained $scFlag -o "$OutputDir\$outSubdir\templates"
 
-# Build TestPackageInstaller
 Write-Host ""
-Write-Host "Building TestPackageInstaller (single-file)..." -ForegroundColor Green
-dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj @publishArgs
+Write-Host "Building SimulatedInstaller (template)..." -ForegroundColor Green
+dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c $Configuration -r $Runtime --self-contained $scFlag -o "$OutputDir\$outSubdir\templates"
 
-# Copy config.ini alongside the installer
-Copy-Item "config.ini" "$OutputDir\publish\config.ini" -Force
+# Copy default config.ini to templates
+Copy-Item "config.ini" "$OutputDir\$outSubdir\templates\config.ini" -Force
 
-# Code signing (requires Azure Trusted Signing CLI: dotnet tool install -g Microsoft.Trusted.Signing.Client)
+# 2. Build Configurator
+Write-Host ""
+Write-Host "Building TestPackage Configurator..." -ForegroundColor Green
+dotnet publish src\TestPackage.Configurator\TestPackage.Configurator.csproj -c $Configuration -r $Runtime --self-contained $scFlag -o "$OutputDir\$outSubdir\configurator"
+
+# Copy templates into configurator directory
+New-Item -ItemType Directory -Path "$OutputDir\$outSubdir\configurator\templates" -Force | Out-Null
+Copy-Item "$OutputDir\$outSubdir\templates\TestPackageInstaller.exe" "$OutputDir\$outSubdir\configurator\templates\" -Force
+Copy-Item "$OutputDir\$outSubdir\templates\TestPackageApp.exe" "$OutputDir\$outSubdir\configurator\templates\" -Force
+Copy-Item "$OutputDir\$outSubdir\templates\config.ini" "$OutputDir\$outSubdir\configurator\templates\" -Force
+
+# Code signing
 if ($Sign) {
-    $buildDir = if ($SelfContained) { "$OutputDir\self-contained" } else { "$OutputDir\publish" }
     Write-Host ""
     Write-Host "Signing executables..." -ForegroundColor Green
-    Get-ChildItem "$buildDir\*.exe" | ForEach-Object {
+    Get-ChildItem "$OutputDir\$outSubdir" -Recurse -Filter "*.exe" | ForEach-Object {
         Write-Host "  Signing $($_.Name)..." -ForegroundColor White
         signtool sign /v /fd SHA256 /tr http://timestamp.acs.microsoft.com /td SHA256 /dlib "Azure.CodeSigning.Dlib.dll" /dmdf sign-metadata.json $_.FullName
         if ($LASTEXITCODE -ne 0) { throw "Signing failed for $($_.Name)" }
     }
-    Write-Host "All executables signed." -ForegroundColor Green
 }
 
 Write-Host ""
 Write-Host "=== Build Complete ===" -ForegroundColor Cyan
-Write-Host "Output: $OutputDir\publish" -ForegroundColor White
+Write-Host "Configurator: $OutputDir\$outSubdir\configurator\" -ForegroundColor White
+Write-Host "Templates:    $OutputDir\$outSubdir\templates\" -ForegroundColor White
 Write-Host ""
-Write-Host "Contents:" -ForegroundColor White
-Get-ChildItem $(if ($SelfContained) { "$OutputDir\self-contained" } else { "$OutputDir\publish" }) | Format-Table Name, Length -AutoSize
-Write-Host ""
-Write-Host "To test: Run $OutputDir\publish\TestPackageInstaller.exe" -ForegroundColor Yellow
-Write-Host "(config.ini must be in the same directory as the executable)" -ForegroundColor Yellow
-
-
+Write-Host "To test: Run $OutputDir\$outSubdir\configurator\TestPackageConfigurator.exe" -ForegroundColor Yellow

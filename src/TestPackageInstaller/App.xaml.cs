@@ -1,20 +1,28 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security.Principal;
 using System.Windows;
+using TestPackage.Core;
 
 namespace TestPackageInstaller
 {
     public partial class App : Application
     {
+        public static bool IsPreviewMode { get; private set; }
+
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
-            // Find config.ini next to the executable
+            IsPreviewMode = e.Args.Contains("--preview", StringComparer.OrdinalIgnoreCase);
+
+            // Find config.ini in _data subfolder first, then next to the executable
             var exeDir = AppDomain.CurrentDomain.BaseDirectory;
-            var configPath = Path.Combine(exeDir, "config.ini");
+            var configPath = Path.Combine(exeDir, "_data", "config.ini");
+            if (!File.Exists(configPath))
+                configPath = Path.Combine(exeDir, "config.ini");
 
             if (!File.Exists(configPath))
             {
@@ -30,12 +38,11 @@ namespace TestPackageInstaller
             {
                 var config = ConfigParser.Load(configPath);
 
-                // Check if admin is required
-                if (config.GetBool("General", "RequireAdmin"))
+                // Skip UAC in preview mode
+                if (!IsPreviewMode && config.GetBool("General", "RequireAdmin"))
                 {
                     if (!IsRunningAsAdmin())
                     {
-                        // Relaunch as admin
                         var psi = new ProcessStartInfo
                         {
                             FileName = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? "",

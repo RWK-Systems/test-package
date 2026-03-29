@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Navigation;
+using TestPackage.Core;
 
 namespace TestPackageInstaller
 {
@@ -18,17 +19,28 @@ namespace TestPackageInstaller
         private int _currentPage;
         private InstallActions? _installer;
 
+        private bool _previewMode;
+
         public MainWindow()
         {
             InitializeComponent();
+            _previewMode = App.IsPreviewMode;
             LoadConfig();
             BuildPageList();
             ShowPage(0);
+
+            if (_previewMode)
+            {
+                Title += " [PREVIEW]";
+                HeaderSubtitle.Text = "Preview Mode — no changes will be made";
+            }
         }
 
         private void LoadConfig()
         {
-            var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.ini");
+            var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "_data", "config.ini");
+            if (!File.Exists(configPath))
+                configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.ini");
             _config = ConfigParser.Load(configPath);
 
             // Apply UI customization
@@ -212,6 +224,13 @@ namespace TestPackageInstaller
 
         private async void Install_Click(object sender, RoutedEventArgs e)
         {
+            if (_previewMode)
+            {
+                MessageBox.Show("This is a preview. No installation will be performed.\n\nIn the real installer, this would begin the installation process.",
+                    "Preview Mode", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             // Move to Installing page
             var installPageIndex = _pages.IndexOf(InstallingPage);
             ShowPage(installPageIndex);
@@ -306,7 +325,7 @@ namespace TestPackageInstaller
         {
             if (LaunchApp.IsChecked == true && _installer?.Manifest != null)
             {
-                var appExe = Path.Combine(_installer.Manifest.InstallDir, "TestPackageApp.exe");
+                var appExe = Path.Combine(_installer.Manifest.InstallDir, _installer.AppExeName);
                 if (File.Exists(appExe))
                 {
                     try

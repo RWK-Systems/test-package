@@ -24,8 +24,6 @@
                     <TextBlock x:Name="HeaderSubtitle" Text="Installation Wizard"
                                FontSize="11" Foreground="#CCE5FF"/>
                 </StackPanel>
-                <TextBlock Grid.Column="1" Text="RWK Systems"
-                           VerticalAlignment="Center" Foreground="#99CCFF" FontSize="11"/>
             </Grid>
         </Border>
 
@@ -41,8 +39,8 @@
                         This wizard will guide you through the installation of TestPackage.
                     </TextBlock>
                     <TextBlock Style="{StaticResource PageDescription}">
-                        TestPackage is a configurable installation simulator created by RWK Systems
-                        for testing software repackaging, application virtualization, and deployment solutions.
+                        TestPackage is a configurable installation simulator for testing software
+                        repackaging, application virtualization, and deployment solutions.
                     </TextBlock>
                     <TextBlock Style="{StaticResource PageDescription}" Margin="0,10,0,0">
                         Unlike using generic applications (like 7-Zip or Notepad++) for testing, TestPackage

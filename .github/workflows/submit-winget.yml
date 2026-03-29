@@ -1,0 +1,55 @@
+name: Submit to winget
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to submit (e.g. v1.0.3)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    runs-on: windows-latest
+
+    steps:
+    - name: Validate tag format
+      shell: pwsh
+      run: |
+        $tag = "${{ inputs.tag }}"
+        if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
+          Write-Error "Tag must be a stable release (e.g. v1.0.3). Pre-release tags are not allowed."
+          exit 1
+        }
+
+    - name: Extract version
+      id: version
+      shell: pwsh
+      run: |
+        $version = "${{ inputs.tag }}".TrimStart('v')
+        echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+
+    - name: Verify release exists
+      shell: pwsh
+      run: |
+        $url = "https://github.com/${{ github.repository }}/releases/download/${{ inputs.tag }}/TestPackageConfiguratorSetup.exe"
+        try {
+          $response = Invoke-WebRequest -Uri $url -Method Head -MaximumRedirection 5
+          Write-Host "Release asset verified: $url"
+        } catch {
+          Write-Error "Release asset not found at $url. Create the release first."
+          exit 1
+        }
+
+    - name: Submit to winget
+      shell: pwsh
+      run: |
+        Invoke-WebRequest -Uri https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+        .\wingetcreate.exe update RWKSystems.TestPackage `
+          --version ${{ steps.version.outputs.VERSION }} `
+          --urls "https://github.com/${{ github.repository }}/releases/download/${{ inputs.tag }}/TestPackageConfiguratorSetup.exe" `
+          --submit `
+          --token ${{ secrets.WINGET_CREATE_PAT }}

@@ -6,60 +6,8 @@ using System.Linq;
 using System.Text.Json;
 using Microsoft.Win32;
 
-namespace TestPackageInstaller
+namespace TestPackage.Core
 {
-    /// <summary>
-    /// Records all actions taken during install so they can be reversed on uninstall.
-    /// </summary>
-    public class InstallManifest
-    {
-        public string AppName { get; set; } = "";
-        public string AppVersion { get; set; } = "";
-        public string AppGUID { get; set; } = "";
-        public string InstallDir { get; set; } = "";
-        public string InstallContext { get; set; } = "";
-        public string InstalledBy { get; set; } = "";
-        public DateTime InstallDate { get; set; }
-        public List<string> CreatedFiles { get; set; } = new();
-        public List<string> CreatedDirectories { get; set; } = new();
-        public List<string> RegistryEntries { get; set; } = new();
-        public List<string> Shortcuts { get; set; } = new();
-        public List<string> Components { get; set; } = new();
-        public bool DesktopShortcut { get; set; }
-        public bool StartMenuEntry { get; set; }
-        public bool StartMenuPinned { get; set; }
-        public bool ActiveSetup { get; set; }
-        public bool AppPathsRegistered { get; set; }
-        public bool FileAssociationsRegistered { get; set; }
-        public bool ContextMenuRegistered { get; set; }
-        public bool EnvironmentVariablesSet { get; set; }
-        public bool ServiceInstalled { get; set; }
-        public bool ScheduledTaskCreated { get; set; }
-        public bool FirewallRulesCreated { get; set; }
-        public bool ProtocolHandlerRegistered { get; set; }
-        public bool StartupEntryCreated { get; set; }
-        public bool FontInstalled { get; set; }
-        public bool IntentionallyLeaveFiles { get; set; }
-        public bool IntentionallyLeaveRegistry { get; set; }
-        public List<string> LeftoverFiles { get; set; } = new();
-        public List<string> LeftoverRegistry { get; set; } = new();
-
-        public void Save(string installDir)
-        {
-            var path = Path.Combine(installDir, "install-manifest.json");
-            var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(path, json);
-        }
-
-        public static InstallManifest? Load(string installDir)
-        {
-            var path = Path.Combine(installDir, "install-manifest.json");
-            if (!File.Exists(path)) return null;
-            var json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<InstallManifest>(json);
-        }
-    }
-
     public class InstallActions
     {
         private readonly ConfigParser _config;
@@ -75,6 +23,11 @@ namespace TestPackageInstaller
 
         public InstallManifest Manifest => _manifest;
 
+        /// <summary>
+        /// The EXE name of the simulated app, read from config or defaulting to TestPackageApp.exe.
+        /// </summary>
+        public string AppExeName => _config.Get("General", "AppExeName", "TestPackageApp.exe");
+
         public void Execute(string installDir, string context, List<string> selectedComponents,
             bool desktopShortcut, bool startMenuPin, bool activeSetup)
         {
@@ -83,7 +36,7 @@ namespace TestPackageInstaller
             _manifest.InstalledBy = $@"{Environment.UserDomainName}\{Environment.UserName}";
             _manifest.InstallDate = DateTime.Now;
             _manifest.AppName = _config.Get("General", "AppName", "TestPackage");
-            _manifest.AppVersion = _config.Get("General", "AppVersion", "1.0.0");
+            _manifest.AppVersion = _config.Get("General", "AppVersion", "2.0.0");
             _manifest.AppGUID = _config.Get("General", "AppGUID");
             _manifest.Components = selectedComponents;
             _manifest.DesktopShortcut = desktopShortcut;
@@ -153,9 +106,81 @@ namespace TestPackageInstaller
                 }
             }
 
+            // Write description.txt - a human-readable summary of what this installer does
+            WriteDescription(installDir);
+
             // Save the manifest last
             _manifest.Save(installDir);
             _log("Installation manifest saved.");
+        }
+
+        private void WriteDescription(string installDir)
+        {
+            var sb = new System.Text.StringBuilder();
+            var appName = _config.Get("General", "AppName", "TestPackage");
+            var appVersion = _config.Get("General", "AppVersion", "2.0.0");
+
+            sb.AppendLine($"{appName} v{appVersion}");
+            sb.AppendLine(new string('=', 60));
+            sb.AppendLine();
+            sb.AppendLine("This is a simulated installation created by TestPackage Configurator.");
+            sb.AppendLine("It was designed to test software packaging, deployment, and");
+            sb.AppendLine("virtualization tools by exercising real Windows installer behaviors.");
+            sb.AppendLine();
+            sb.AppendLine($"Installed: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            sb.AppendLine($"Location:  {installDir}");
+            sb.AppendLine($"Context:   {_manifest.InstallContext}");
+            sb.AppendLine($"User:      {_manifest.InstalledBy}");
+            sb.AppendLine();
+            sb.AppendLine("Configured behaviors:");
+            sb.AppendLine(new string('-', 40));
+
+            if (_manifest.CreatedFiles.Count > 0)
+                sb.AppendLine($"  Test files:           {_manifest.CreatedFiles.Count} files created");
+            if (_manifest.RegistryEntries.Count > 0)
+                sb.AppendLine($"  Registry entries:     {_manifest.RegistryEntries.Count} entries written");
+            if (_manifest.Components.Count > 0)
+                sb.AppendLine($"  Components:           {string.Join(", ", _manifest.Components)}");
+            if (_manifest.DesktopShortcut)
+                sb.AppendLine("  Desktop shortcut:     Yes");
+            if (_manifest.StartMenuEntry)
+                sb.AppendLine("  Start Menu entry:     Yes");
+            if (_manifest.StartMenuPinned)
+                sb.AppendLine("  Start Menu pinned:    Yes");
+            if (_manifest.ActiveSetup)
+                sb.AppendLine("  Active Setup:         Registered");
+            if (_manifest.AppPathsRegistered)
+                sb.AppendLine("  App Paths:            Registered");
+            if (_manifest.FileAssociationsRegistered)
+                sb.AppendLine("  File associations:    Registered");
+            if (_manifest.ContextMenuRegistered)
+                sb.AppendLine("  Context menu:         Registered");
+            if (_manifest.EnvironmentVariablesSet)
+                sb.AppendLine("  Environment vars:     Set");
+            if (_manifest.ServiceInstalled)
+                sb.AppendLine("  Windows service:      Installed");
+            if (_manifest.ScheduledTaskCreated)
+                sb.AppendLine("  Scheduled task:       Created");
+            if (_manifest.FirewallRulesCreated)
+                sb.AppendLine("  Firewall rules:       Created");
+            if (_manifest.ProtocolHandlerRegistered)
+                sb.AppendLine("  Protocol handler:     Registered");
+            if (_manifest.StartupEntryCreated)
+                sb.AppendLine("  Startup entry:        Created");
+            if (_manifest.FontInstalled)
+                sb.AppendLine("  Font:                 Installed");
+            if (_manifest.IntentionallyLeaveFiles)
+                sb.AppendLine("  Leftover files:       Will remain after uninstall");
+            if (_manifest.IntentionallyLeaveRegistry)
+                sb.AppendLine("  Leftover registry:    Will remain after uninstall");
+
+            sb.AppendLine();
+            sb.AppendLine("This file was generated by TestPackage (https://rwksystems.com/test-package).");
+
+            var path = Path.Combine(installDir, "description.txt");
+            File.WriteAllText(path, sb.ToString());
+            _manifest.CreatedFiles.Add(path);
+            _log("Created description.txt");
         }
 
         private void CreateDirectories(string installDir)
@@ -167,12 +192,16 @@ namespace TestPackageInstaller
 
         private void CopyApplicationFiles(string installDir)
         {
-            // Copy the TestPackageApp executable (built alongside the installer)
             var sourceDir = AppDomain.CurrentDomain.BaseDirectory;
-            var appExe = Path.Combine(sourceDir, "TestPackageApp.exe");
+            var dataDir = Path.Combine(sourceDir, "_data");
+            var appExeName = AppExeName;
+            var appBaseName = Path.GetFileNameWithoutExtension(appExeName);
 
-            // Copy all TestPackageApp files if present
-            foreach (var file in Directory.GetFiles(sourceDir, "TestPackageApp*"))
+            // Look for app files in _data subfolder first, then same directory
+            var appSourceDir = Directory.Exists(dataDir) ? dataDir : sourceDir;
+
+            // Copy the simulated app executable and its sidecar files
+            foreach (var file in Directory.GetFiles(appSourceDir, $"{appBaseName}*"))
             {
                 var destFile = Path.Combine(installDir, Path.GetFileName(file));
                 File.Copy(file, destFile, true);
@@ -183,7 +212,7 @@ namespace TestPackageInstaller
             // Copy runtime deps if present
             foreach (var pattern in new[] { "*.dll", "*.runtimeconfig.json", "*.deps.json" })
             {
-                foreach (var file in Directory.GetFiles(sourceDir, pattern))
+                foreach (var file in Directory.GetFiles(appSourceDir, pattern))
                 {
                     var destFile = Path.Combine(installDir, Path.GetFileName(file));
                     if (!File.Exists(destFile))
@@ -194,8 +223,10 @@ namespace TestPackageInstaller
                 }
             }
 
-            // Copy config.ini
-            var configSrc = Path.Combine(sourceDir, "config.ini");
+            // Copy config.ini from _data or same directory
+            var configSrc = Path.Combine(dataDir, "config.ini");
+            if (!File.Exists(configSrc))
+                configSrc = Path.Combine(sourceDir, "config.ini");
             if (File.Exists(configSrc))
             {
                 var configDest = Path.Combine(installDir, "config.ini");
@@ -317,7 +348,7 @@ namespace TestPackageInstaller
             var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
             var shortcutPath = Path.Combine(desktop, $"{name}.lnk");
 
-            CreateShortcut(shortcutPath, Path.Combine(installDir, "TestPackageApp.exe"), installDir);
+            CreateShortcut(shortcutPath, Path.Combine(installDir, AppExeName), installDir);
             _manifest.Shortcuts.Add(shortcutPath);
             _manifest.DesktopShortcut = true;
             _log($"Created desktop shortcut: {shortcutPath}");
@@ -325,6 +356,7 @@ namespace TestPackageInstaller
 
         private void CreateStartMenuEntry(string installDir)
         {
+            var appName = _config.Get("General", "AppName", "TestPackage");
             var folder = _config.Get("Shortcuts", "StartMenuFolder", @"RWK Systems\TestPackage");
             var startMenu = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.StartMenu),
@@ -332,22 +364,20 @@ namespace TestPackageInstaller
             Directory.CreateDirectory(startMenu);
             _manifest.CreatedDirectories.Add(startMenu);
 
-            var shortcutPath = Path.Combine(startMenu, "TestPackage.lnk");
-            CreateShortcut(shortcutPath, Path.Combine(installDir, "TestPackageApp.exe"), installDir);
+            var shortcutPath = Path.Combine(startMenu, $"{appName}.lnk");
+            CreateShortcut(shortcutPath, Path.Combine(installDir, AppExeName), installDir);
             _manifest.Shortcuts.Add(shortcutPath);
             _manifest.StartMenuEntry = true;
             _log($"Created Start Menu entry: {shortcutPath}");
 
             // Uninstall shortcut
-            var uninstallPath = Path.Combine(startMenu, "Uninstall TestPackage.lnk");
-            CreateShortcut(uninstallPath, Path.Combine(installDir, "TestPackageApp.exe"), installDir, "--uninstall");
+            var uninstallPath = Path.Combine(startMenu, $"Uninstall {appName}.lnk");
+            CreateShortcut(uninstallPath, Path.Combine(installDir, AppExeName), installDir, "--uninstall");
             _manifest.Shortcuts.Add(uninstallPath);
         }
 
         private void PinToStartMenu(string installDir)
         {
-            // Note: Programmatic pinning is restricted in modern Windows
-            // We register the app for Start Menu visibility instead
             _manifest.StartMenuPinned = true;
             _log("Start Menu pin requested (application registered).");
         }
@@ -356,7 +386,7 @@ namespace TestPackageInstaller
         {
             var guid = _config.Get("General", "AppGUID");
             var stubPath = _config.ExpandVariables(
-                _config.Get("ActiveSetup", "StubPath", $"{installDir}\\TestPackageApp.exe --activesetup"),
+                _config.Get("ActiveSetup", "StubPath", $"{installDir}\\{AppExeName} --activesetup"),
                 installDir);
             var version = _config.Get("ActiveSetup", "Version", "1,0,0,0");
 
@@ -382,7 +412,7 @@ namespace TestPackageInstaller
 
         private void RegisterAppPaths(string installDir)
         {
-            var exeName = _config.Get("AppPaths", "ExeName", "TestPackageApp.exe");
+            var exeName = _config.Get("AppPaths", "ExeName", AppExeName);
             var keyPath = $@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\{exeName}";
             var exePath = Path.Combine(installDir, exeName);
 
@@ -400,7 +430,6 @@ namespace TestPackageInstaller
             }
             catch
             {
-                // Try HKCU if HKLM fails
                 try
                 {
                     using var key = Registry.CurrentUser.CreateSubKey(keyPath, true);
@@ -435,17 +464,15 @@ namespace TestPackageInstaller
 
                 try
                 {
-                    // Register ProgID
                     using (var progKey = Registry.ClassesRoot.CreateSubKey(progId, true))
                     {
                         progKey?.SetValue("", desc);
                         using var iconKey = progKey?.CreateSubKey("DefaultIcon", true);
                         iconKey?.SetValue("", icon);
                         using var cmdKey = progKey?.CreateSubKey(@"shell\open\command", true);
-                        cmdKey?.SetValue("", $"\"{Path.Combine(installDir, "TestPackageApp.exe")}\" \"%1\"");
+                        cmdKey?.SetValue("", $"\"{Path.Combine(installDir, AppExeName)}\" \"%1\"");
                     }
 
-                    // Associate extension
                     using (var extKey = Registry.ClassesRoot.CreateSubKey(ext, true))
                     {
                         extKey?.SetValue("", progId);
@@ -534,8 +561,7 @@ namespace TestPackageInstaller
 
             try
             {
-                // Use sc.exe to create the service
-                var exePath = Path.Combine(installDir, "TestPackageApp.exe");
+                var exePath = Path.Combine(installDir, AppExeName);
                 var startFlag = startType.Equals("Automatic", StringComparison.OrdinalIgnoreCase) ? "auto" :
                                 startType.Equals("Disabled", StringComparison.OrdinalIgnoreCase) ? "disabled" : "demand";
 
@@ -543,6 +569,7 @@ namespace TestPackageInstaller
                 RunProcess("sc.exe", $"description \"{serviceName}\" \"{description}\"");
 
                 _manifest.ServiceInstalled = true;
+                _manifest.ServiceName = serviceName;
                 _log($"Installed service: {serviceName}");
             }
             catch (Exception ex)
@@ -560,7 +587,7 @@ namespace TestPackageInstaller
 
             try
             {
-                var exePath = Path.Combine(installDir, "TestPackageApp.exe");
+                var exePath = Path.Combine(installDir, AppExeName);
                 var schedFlag = schedule.ToLower() switch
                 {
                     "weekly" => "WEEKLY",
@@ -575,6 +602,7 @@ namespace TestPackageInstaller
 
                 RunProcess("schtasks.exe", args);
                 _manifest.ScheduledTaskCreated = true;
+                _manifest.ScheduledTaskName = taskName;
                 _log($"Created scheduled task: {taskName}");
             }
             catch (Exception ex)
@@ -601,6 +629,7 @@ namespace TestPackageInstaller
                 {
                     RunProcess("netsh.exe",
                         $"advfirewall firewall add rule name=\"{name}\" dir={direction} action={action} protocol={protocol} localport={port}");
+                    _manifest.FirewallRuleNames.Add(name);
                     _log($"Created firewall rule: {name}");
                 }
                 catch (Exception ex)
@@ -630,7 +659,7 @@ namespace TestPackageInstaller
                         key.SetValue("", $"URL:{desc}");
                         key.SetValue("URL Protocol", "");
                         using var cmdKey = key.CreateSubKey(@"shell\open\command", true);
-                        cmdKey?.SetValue("", $"\"{Path.Combine(installDir, "TestPackageApp.exe")}\" \"%1\"");
+                        cmdKey?.SetValue("", $"\"{Path.Combine(installDir, AppExeName)}\" \"%1\"");
                     }
                     _manifest.RegistryEntries.Add($"HKCR\\{protocol}");
                     _log($"Registered protocol handler: {protocol}://");
@@ -647,7 +676,8 @@ namespace TestPackageInstaller
         {
             var method = _config.Get("Startup", "Method", "Registry");
             var scope = _config.Get("Startup", "Scope", "User");
-            var exePath = Path.Combine(installDir, "TestPackageApp.exe");
+            var appName = _config.Get("General", "AppName", "TestPackage");
+            var exePath = Path.Combine(installDir, AppExeName);
 
             try
             {
@@ -656,9 +686,9 @@ namespace TestPackageInstaller
                     var root = scope.Equals("Machine", StringComparison.OrdinalIgnoreCase)
                         ? Registry.LocalMachine : Registry.CurrentUser;
                     using var key = root.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-                    key?.SetValue("TestPackage", $"\"{exePath}\"");
+                    key?.SetValue(appName, $"\"{exePath}\"");
                     _manifest.RegistryEntries.Add(
-                        $"{(scope.Equals("Machine", StringComparison.OrdinalIgnoreCase) ? "HKLM" : "HKCU")}\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run|TestPackage");
+                        $"{(scope.Equals("Machine", StringComparison.OrdinalIgnoreCase) ? "HKLM" : "HKCU")}\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run|{appName}");
                 }
                 else
                 {
@@ -666,7 +696,7 @@ namespace TestPackageInstaller
                         scope.Equals("Machine", StringComparison.OrdinalIgnoreCase)
                             ? Environment.SpecialFolder.CommonStartup
                             : Environment.SpecialFolder.Startup);
-                    var shortcutPath = Path.Combine(startupFolder, "TestPackage.lnk");
+                    var shortcutPath = Path.Combine(startupFolder, $"{appName}.lnk");
                     CreateShortcut(shortcutPath, exePath, installDir);
                     _manifest.Shortcuts.Add(shortcutPath);
                 }
@@ -681,7 +711,6 @@ namespace TestPackageInstaller
 
         private void InstallFont(string installDir)
         {
-            // Font installation is complex; we'll register the font name in the registry
             var fontFile = _config.Get("Fonts", "FontFile", "");
             var fontName = _config.Get("Fonts", "FontName", "TestPackage Font");
 
@@ -711,10 +740,10 @@ namespace TestPackageInstaller
         private void RegisterUninstaller(string installDir)
         {
             var appName = _config.Get("General", "AppName", "TestPackage");
-            var appVersion = _config.Get("General", "AppVersion", "1.0.0");
+            var appVersion = _config.Get("General", "AppVersion", "2.0.0");
             var publisher = _config.Get("General", "AppPublisher", "RWK Systems");
             var guid = _config.Get("General", "AppGUID");
-            var exePath = Path.Combine(installDir, "TestPackageApp.exe");
+            var exePath = Path.Combine(installDir, AppExeName);
 
             var keyPath = $@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{guid}";
             try
@@ -735,7 +764,6 @@ namespace TestPackageInstaller
                     key.SetValue("NoModify", 1, RegistryValueKind.DWord);
                     key.SetValue("NoRepair", 1, RegistryValueKind.DWord);
 
-                    // Estimate size
                     var size = Directory.GetFiles(installDir, "*", SearchOption.AllDirectories)
                         .Sum(f => new FileInfo(f).Length) / 1024;
                     key.SetValue("EstimatedSize", (int)size, RegistryValueKind.DWord);
@@ -753,7 +781,6 @@ namespace TestPackageInstaller
 
         private void CreateShortcut(string shortcutPath, string targetPath, string workingDir, string arguments = "")
         {
-            // Use PowerShell to create .lnk shortcut (avoids COM interop dependency)
             var ps = $@"$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('{shortcutPath}'); $s.TargetPath = '{targetPath}'; $s.WorkingDirectory = '{workingDir}'; $s.Arguments = '{arguments}'; $s.Save()";
             RunProcess("powershell.exe", $"-NoProfile -Command \"{ps}\"");
         }

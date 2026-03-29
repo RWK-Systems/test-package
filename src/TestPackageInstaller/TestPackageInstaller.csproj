@@ -8,10 +8,11 @@
     <Nullable>enable</Nullable>
     <AssemblyName>TestPackageInstaller</AssemblyName>
     <RootNamespace>TestPackageInstaller</RootNamespace>
-    <Version>1.0.2</Version>
+    <Version>2.0.0</Version>
     <Company>RWK Systems</Company>
-    <Product>TestPackage Installer</Product>
+    <Product>TestPackage Simulated Installer</Product>
     <Description>A configurable installation simulator for testing repackaging and deployment solutions</Description>
+    <ApplicationIcon>..\..\assets\icon.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
@@ -22,10 +23,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\TestPackage.Core\TestPackage.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="..\..\config.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
 </Project>
-

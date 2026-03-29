@@ -1,144 +1,100 @@
 ; =============================================================================
-; Test Package NSIS Installer Script
+; TestPackage Configurator Installer (NSIS)
 ; =============================================================================
-; Builds a standard Windows installer for the Test Package tool.
-; Installs to: %ProgramFiles%\RWK Systems\Test Package
-;
-; Build this with:
-;   makensis installer\test-package-setup.nsi
-;
-; The script expects the self-contained build output in dist\self-contained\
+; Installs the TestPackage Configurator tool, which lets users design and
+; generate simulated installers for testing repackaging and deployment.
 ; =============================================================================
 
 !include "MUI2.nsh"
-!include "FileFunc.nsh"
 
-; ---------------------------------------------------------------------------
-; General
-; ---------------------------------------------------------------------------
-Name "Test Package"
-OutFile "..\dist\TestPackageSetup.exe"
-InstallDir "$PROGRAMFILES\RWK Systems\Test Package"
-InstallDirRegKey HKLM "Software\RWK Systems\Test Package" "InstallDir"
-RequestExecutionLevel admin
-Unicode True
-
-; Version info
-!define PRODUCT_NAME "Test Package"
-!define PRODUCT_VERSION "1.0.2"
+; --- Product Info ---
+!define PRODUCT_NAME "TestPackage Configurator"
+!define PRODUCT_VERSION "2.0.0"
 !define PRODUCT_PUBLISHER "RWK Systems"
 !define PRODUCT_WEB_SITE "https://rwksystems.com"
+!define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\TestPackageConfigurator.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
 
-VIProductVersion "1.0.2.0"
-VIAddVersionKey "ProductName" "${PRODUCT_NAME}"
-VIAddVersionKey "CompanyName" "${PRODUCT_PUBLISHER}"
-VIAddVersionKey "LegalCopyright" "Copyright ${PRODUCT_PUBLISHER}"
-VIAddVersionKey "FileDescription" "${PRODUCT_NAME} Setup"
-VIAddVersionKey "FileVersion" "${PRODUCT_VERSION}"
-VIAddVersionKey "ProductVersion" "${PRODUCT_VERSION}"
+; --- Installer Settings ---
+Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
+OutFile "..\dist\TestPackageConfiguratorSetup.exe"
+InstallDir "$PROGRAMFILES\RWK Systems\TestPackage Configurator"
+InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
+RequestExecutionLevel admin
+SetCompressor /SOLID lzma
 
-; ---------------------------------------------------------------------------
-; Interface Settings
-; ---------------------------------------------------------------------------
-!define MUI_ABORTWARNING
-!define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
-!define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+; --- Custom Icon ---
+!define MUI_ICON "..\assets\icon.ico"
+!define MUI_UNICON "..\assets\icon.ico"
 
-; Welcome page
-!define MUI_WELCOMEPAGE_TITLE "Welcome to Test Package Setup"
-!define MUI_WELCOMEPAGE_TEXT "This wizard will install Test Package on your computer.$\r$\n$\r$\nTest Package is a configurable Windows installation simulator for testing repackaging tools, application virtualization solutions, and deployment platforms.$\r$\n$\r$\nClick Next to continue."
-
-; Finish page
-!define MUI_FINISHPAGE_TITLE "Test Package Setup Complete"
-!define MUI_FINISHPAGE_TEXT "Test Package has been installed on your computer.$\r$\n$\r$\nYou can now run TestPackageInstaller.exe to launch the installation simulator. Edit config.ini to customize the installation behavior before running."
-!define MUI_FINISHPAGE_RUN ""
-!define MUI_FINISHPAGE_RUN_TEXT "Open installation folder"
-!define MUI_FINISHPAGE_RUN_FUNCTION "OpenInstallFolder"
-!define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\readme.txt"
-!define MUI_FINISHPAGE_SHOWREADME_TEXT "View readme"
-
-; ---------------------------------------------------------------------------
-; Pages
-; ---------------------------------------------------------------------------
+; --- MUI Pages ---
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
+!define MUI_FINISHPAGE_RUN "$INSTDIR\TestPackageConfigurator.exe"
+!define MUI_FINISHPAGE_RUN_TEXT "Launch TestPackage Configurator"
 !insertmacro MUI_PAGE_FINISH
 
-; Uninstaller pages
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 
-; ---------------------------------------------------------------------------
-; Languages
-; ---------------------------------------------------------------------------
 !insertmacro MUI_LANGUAGE "English"
 
-; ---------------------------------------------------------------------------
-; Install Section
-; ---------------------------------------------------------------------------
-Section "Install" SecInstall
+; --- Install Section ---
+Section "Install"
     SetOutPath "$INSTDIR"
 
-    ; Install all files from the self-contained build
-    File /r "..\dist\self-contained\*.*"
+    ; Core files
+    File "..\dist\self-contained\configurator\TestPackageConfigurator.exe"
 
-    ; Ensure key files are present (these should already be in the build output)
-    ; TestPackageInstaller.exe, TestPackageApp.exe, config.ini are from the dotnet publish
-    ; readme.txt is copied during build
+    ; Template files for generating installers
+    SetOutPath "$INSTDIR\templates"
+    File "..\dist\self-contained\templates\TestPackageInstaller.exe"
+    File "..\dist\self-contained\templates\TestPackageApp.exe"
+    File "..\dist\self-contained\templates\config.ini"
+
+    ; Back to main dir
+    SetOutPath "$INSTDIR"
 
     ; Create uninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
 
-    ; Registry entries for Add/Remove Programs
+    ; Shortcuts
+    CreateDirectory "$SMPROGRAMS\RWK Systems"
+    CreateShortCut "$SMPROGRAMS\RWK Systems\TestPackage Configurator.lnk" "$INSTDIR\TestPackageConfigurator.exe" "" "$INSTDIR\TestPackageConfigurator.exe" 0
+    CreateShortCut "$SMPROGRAMS\RWK Systems\Uninstall TestPackage Configurator.lnk" "$INSTDIR\uninstall.exe"
+
+    ; Registry
+    WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "" "$INSTDIR\TestPackageConfigurator.exe"
     WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "${PRODUCT_NAME}"
-    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
-    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "QuietUninstallString" '"$INSTDIR\uninstall.exe" /S'
-    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "InstallLocation" "$INSTDIR"
-    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\TestPackageInstaller.exe"
+    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
     WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
     WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
-    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
+    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" "$INSTDIR\uninstall.exe"
+    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "InstallLocation" "$INSTDIR"
+    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\TestPackageConfigurator.exe"
     WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoModify" 1
     WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoRepair" 1
-
-    ; Calculate installed size
-    ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
-    IntFmt $0 "0x%08X" $0
-    WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "EstimatedSize" $0
-
-    ; Store install directory
-    WriteRegStr HKLM "Software\RWK Systems\Test Package" "InstallDir" "$INSTDIR"
-
-    ; Create Start Menu shortcuts
-    CreateDirectory "$SMPROGRAMS\RWK Systems"
-    CreateShortcut "$SMPROGRAMS\RWK Systems\Test Package.lnk" "$INSTDIR\TestPackageInstaller.exe"
-    CreateShortcut "$SMPROGRAMS\RWK Systems\Uninstall Test Package.lnk" "$INSTDIR\uninstall.exe"
 SectionEnd
 
-; ---------------------------------------------------------------------------
-; Uninstall Section
-; ---------------------------------------------------------------------------
+; --- Uninstall Section ---
 Section "Uninstall"
-    ; Remove Start Menu shortcuts
-    Delete "$SMPROGRAMS\RWK Systems\Test Package.lnk"
-    Delete "$SMPROGRAMS\RWK Systems\Uninstall Test Package.lnk"
+    ; Remove files
+    Delete "$INSTDIR\TestPackageConfigurator.exe"
+    Delete "$INSTDIR\templates\TestPackageInstaller.exe"
+    Delete "$INSTDIR\templates\TestPackageApp.exe"
+    Delete "$INSTDIR\templates\config.ini"
+    RMDir "$INSTDIR\templates"
+    Delete "$INSTDIR\uninstall.exe"
+    RMDir "$INSTDIR"
+
+    ; Remove shortcuts
+    Delete "$SMPROGRAMS\RWK Systems\TestPackage Configurator.lnk"
+    Delete "$SMPROGRAMS\RWK Systems\Uninstall TestPackage Configurator.lnk"
     RMDir "$SMPROGRAMS\RWK Systems"
 
-    ; Remove registry entries
+    ; Remove registry
+    DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
     DeleteRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}"
-    DeleteRegKey HKLM "Software\RWK Systems\Test Package"
-
-    ; Remove files and directory
-    RMDir /r "$INSTDIR"
 SectionEnd
-
-; ---------------------------------------------------------------------------
-; Functions
-; ---------------------------------------------------------------------------
-Function OpenInstallFolder
-    ExecShell "open" "$INSTDIR"
-FunctionEnd
-

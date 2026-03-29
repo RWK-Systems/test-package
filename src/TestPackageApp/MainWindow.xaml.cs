@@ -2,13 +2,13 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Principal;
-using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using Microsoft.Win32;
+using TestPackage.Core;
 
 namespace TestPackageApp
 {
@@ -19,6 +19,7 @@ namespace TestPackageApp
         public MainWindow()
         {
             InitializeComponent();
+            ClampToScreen();
             LoadManifest();
             PopulateContext();
             PopulateInstallDetails();
@@ -27,19 +28,22 @@ namespace TestPackageApp
             PopulateFeatures();
         }
 
+        private void ClampToScreen()
+        {
+            var workArea = SystemParameters.WorkArea;
+            MaxHeight = workArea.Height;
+            if (Width > workArea.Width)
+                Width = workArea.Width;
+        }
+
         private void LoadManifest()
         {
             var exeDir = AppDomain.CurrentDomain.BaseDirectory;
-            var manifestPath = Path.Combine(exeDir, "install-manifest.json");
-            if (File.Exists(manifestPath))
+            try
             {
-                try
-                {
-                    var json = File.ReadAllText(manifestPath);
-                    _manifest = JsonSerializer.Deserialize<InstallManifest>(json);
-                }
-                catch { }
+                _manifest = InstallManifest.Load(exeDir);
             }
+            catch { }
         }
 
         private void PopulateContext()
@@ -290,40 +294,5 @@ namespace TestPackageApp
             });
             e.Handled = true;
         }
-    }
-
-    // Shared manifest class (mirrors the installer's version)
-    public class InstallManifest
-    {
-        public string AppName { get; set; } = "";
-        public string AppVersion { get; set; } = "";
-        public string AppGUID { get; set; } = "";
-        public string InstallDir { get; set; } = "";
-        public string InstallContext { get; set; } = "";
-        public string InstalledBy { get; set; } = "";
-        public DateTime InstallDate { get; set; }
-        public System.Collections.Generic.List<string> CreatedFiles { get; set; } = new();
-        public System.Collections.Generic.List<string> CreatedDirectories { get; set; } = new();
-        public System.Collections.Generic.List<string> RegistryEntries { get; set; } = new();
-        public System.Collections.Generic.List<string> Shortcuts { get; set; } = new();
-        public System.Collections.Generic.List<string> Components { get; set; } = new();
-        public bool DesktopShortcut { get; set; }
-        public bool StartMenuEntry { get; set; }
-        public bool StartMenuPinned { get; set; }
-        public bool ActiveSetup { get; set; }
-        public bool AppPathsRegistered { get; set; }
-        public bool FileAssociationsRegistered { get; set; }
-        public bool ContextMenuRegistered { get; set; }
-        public bool EnvironmentVariablesSet { get; set; }
-        public bool ServiceInstalled { get; set; }
-        public bool ScheduledTaskCreated { get; set; }
-        public bool FirewallRulesCreated { get; set; }
-        public bool ProtocolHandlerRegistered { get; set; }
-        public bool StartupEntryCreated { get; set; }
-        public bool FontInstalled { get; set; }
-        public bool IntentionallyLeaveFiles { get; set; }
-        public bool IntentionallyLeaveRegistry { get; set; }
-        public System.Collections.Generic.List<string> LeftoverFiles { get; set; } = new();
-        public System.Collections.Generic.List<string> LeftoverRegistry { get; set; } = new();
     }
 }
