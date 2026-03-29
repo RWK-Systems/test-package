@@ -108,7 +108,7 @@ For more information, visit the [TestPackage product page](https://www.rwksystem
 
 ## License
 
-[MIT License](LICENSE)
+[Proprietary](LICENSE)
 
 ## Roadmap
 
