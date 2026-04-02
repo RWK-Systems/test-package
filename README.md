@@ -102,6 +102,34 @@ test-package/
     └── submit-winget.yml               # Manual winget submission
 ```
 
+## Silent Install & Command-Line Parameters
+
+The generated simulated installers support unattended deployment:
+
+```
+YourSimulatedSetup.exe /S                              # Silent install with config defaults
+YourSimulatedSetup.exe /S /D=C:\MyApp                  # Custom install directory
+YourSimulatedSetup.exe /S /context=user                # Per-user install
+YourSimulatedSetup.exe /S /noshortcut                  # Skip desktop shortcut
+YourSimulatedSetup.exe /S /reboot                      # Enable reboot prompt
+YourSimulatedSetup.exe /S /components=CoreFiles,Plugins # Select specific components
+```
+
+| Switch | Description |
+|--------|-------------|
+| `/S`, `/silent`, `--silent` | Silent install (no wizard UI) |
+| `/D=<path>`, `/dir=<path>` | Override install directory |
+| `/context=machine\|user` | Override install context |
+| `/components=A,B,C` | Override component selection |
+| `/shortcut`, `/noshortcut` | Override desktop shortcut |
+| `/startmenupin`, `/nostartmenupin` | Override Start Menu pin |
+| `/activesetup`, `/noactivesetup` | Override Active Setup |
+| `/reboot`, `/noreboot` | Override reboot behavior |
+
+All switches can be combined. Command-line overrides take priority over config.ini defaults. Exit code 0 on success, 1 on failure.
+
+**Note:** TestPackage itself (the tool installer) also supports silent install via NSIS: `TestPackageSetup.exe /S`
+
 ## Product Page
 
 For more information, visit the [TestPackage product page](https://www.rwksystems.com/test-package/).
