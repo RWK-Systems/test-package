@@ -10,13 +10,13 @@ namespace TestPackage.Core
     public class ConfigModel
     {
         // General
-        public string AppName { get; set; } = "TestPackage";
+        public string AppName { get; set; } = "My Test Package";
         public string AppVersion { get; set; } = "2.5.1";
-        public string AppPublisher { get; set; } = "RWK Systems";
-        public string AppURL { get; set; } = "https://rwksystems.com";
+        public string AppPublisher { get; set; } = "Your Mom";
+        public string AppURL { get; set; } = "https://stupidapps.com";
         public string AppGUID { get; set; } = "{E8A3B025-7F4D-4B1A-9C6E-2D8F5A1B3C4D}";
         public bool RequireAdmin { get; set; }
-        public string AppExeName { get; set; } = "YourSimulatedApp.exe";
+        public string AppExeName { get; set; } = "MySimulatedApp.exe";
         public string InstallerExeName { get; set; } = "YourSimulatedSetup.exe";
 
         // Wizard Pages
