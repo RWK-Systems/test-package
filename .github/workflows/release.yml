@@ -108,7 +108,7 @@ jobs:
 
           ### What's New in v2.5
 
-          - **Configurable installer size** — Pad the installation to any size up to 100 GB to test how repackaging and virtualization tools handle large payloads
+          - **Configurable installer size** — Set the generated setup EXE to any size up to 100 GB (non-linear slider + exact MB entry) to test how repackaging and virtualization tools handle large installers
           - **Disk-space prerequisite check** — The generated installer verifies free space on the target drive before installing
           - **Configurator GUI** — Design your test scenarios visually
           - **Generate Installer** — One click to create a simulated setup EXE

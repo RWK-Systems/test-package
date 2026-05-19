@@ -39,7 +39,6 @@ namespace TestPackage.Core
         public bool ProtocolHandlerRegistered { get; set; }
         public bool StartupEntryCreated { get; set; }
         public bool FontInstalled { get; set; }
-        public long InstallerPaddingBytes { get; set; }
         public bool IntentionallyLeaveFiles { get; set; }
         public bool IntentionallyLeaveRegistry { get; set; }
         public List<string> LeftoverFiles { get; set; } = new();

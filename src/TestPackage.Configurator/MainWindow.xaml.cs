@@ -383,7 +383,7 @@ namespace TestPackage.Configurator
             TxtDefaultPath.Text = m.DefaultPath;
             ChkAllowCustomPath.IsChecked = m.AllowCustomPath;
             ChkInstallerSize.IsChecked = m.InstallerSizeEnabled;
-            TxtInstallerSizeGB.Text = (m.InstallerSizeMB / 1024.0).ToString("0.###");
+            SetInstallerSizeMB(m.InstallerSizeMB);
 
             ChkShowWelcome.IsChecked = m.ShowWelcome;
             ChkShowEULA.IsChecked = m.ShowEULA;
@@ -479,8 +479,7 @@ namespace TestPackage.Configurator
             m.DefaultPath = TxtDefaultPath.Text.Trim();
             m.AllowCustomPath = ChkAllowCustomPath.IsChecked == true;
             m.InstallerSizeEnabled = ChkInstallerSize.IsChecked == true;
-            var gb = double.TryParse(TxtInstallerSizeGB.Text, out var g) && g > 0 ? g : 0;
-            m.InstallerSizeMB = Math.Min((int)Math.Round(gb * 1024), ConfigModel.MaxInstallerSizeMB);
+            m.InstallerSizeMB = ParseInstallerSizeMB();
 
             m.ShowWelcome = ChkShowWelcome.IsChecked == true;
             m.ShowEULA = ChkShowEULA.IsChecked == true;
@@ -631,7 +630,28 @@ namespace TestPackage.Configurator
                 Directory.CreateDirectory(dataFolder);
 
                 // Installer EXE goes in the root of the package folder
-                File.Copy(installerTemplate, Path.Combine(packageFolder, model.InstallerExeName), true);
+                var installerExePath = Path.Combine(packageFolder, model.InstallerExeName);
+                File.Copy(installerTemplate, installerExePath, true);
+
+                // Pad the generated setup EXE to the requested size (appends trailing
+                // bytes after the PE image, which the loader ignores).
+                var sizeNote = "";
+                if (model.InstallerSizeEnabled && model.InstallerSizeMB > 0)
+                {
+                    long targetBytes = (long)model.InstallerSizeMB * 1024L * 1024L;
+                    var info = new FileInfo(installerExePath);
+                    if (targetBytes > info.Length)
+                    {
+                        using var fs = new FileStream(installerExePath, FileMode.Open, FileAccess.Write);
+                        fs.SetLength(targetBytes);
+                        sizeNote = $"\n\nInstaller size: {model.InstallerSizeMB} MB";
+                    }
+                    else
+                    {
+                        sizeNote = $"\n\nRequested size ({model.InstallerSizeMB} MB) is smaller than the " +
+                                   $"base installer ({info.Length / (1024 * 1024)} MB); left unpadded.";
+                    }
+                }
 
                 // Companion files go in _data (installer reads from here at runtime)
                 if (File.Exists(appTemplate))
@@ -639,7 +659,7 @@ namespace TestPackage.Configurator
                 File.WriteAllText(Path.Combine(dataFolder, "config.ini"), ConfigWriter.Write(model));
 
                 MessageBox.Show(
-                    $"Installer generated!\n\n{packageFolder}\\{model.InstallerExeName}\n\n" +
+                    $"Installer generated!\n\n{packageFolder}\\{model.InstallerExeName}{sizeNote}\n\n" +
                     "Run this EXE to test your packaging workflow.",
                     "TestPackage", MessageBoxButton.OK, MessageBoxImage.Information);
                 Process.Start(new ProcessStartInfo { FileName = packageFolder, UseShellExecute = true });
@@ -724,5 +744,67 @@ namespace TestPackage.Configurator
         { foreach (ComboBoxItem item in combo.Items) if (item.Content?.ToString()?.Equals(value, StringComparison.OrdinalIgnoreCase) == true) { item.IsSelected = true; return; } }
 
         private static string GetComboText(ComboBox combo) => (combo.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "";
+
+        // ===== Installer Size (non-linear slider <-> exact MB textbox) =====
+
+        private bool _suppressSizeSync;
+
+        // Slider position 0..100 maps to MB via a cubic curve, so small drags on
+        // the left give fine megabyte control and the right end reaches 100 GB.
+        private static int SliderPosToMB(double pos)
+        {
+            pos = Math.Clamp(pos, 0, 100);
+            return (int)Math.Round(Math.Pow(pos / 100.0, 3) * ConfigModel.MaxInstallerSizeMB);
+        }
+
+        private static double MBToSliderPos(int mb)
+        {
+            mb = Math.Clamp(mb, 0, ConfigModel.MaxInstallerSizeMB);
+            return 100.0 * Math.Pow(mb / (double)ConfigModel.MaxInstallerSizeMB, 1.0 / 3.0);
+        }
+
+        private int ParseInstallerSizeMB()
+        {
+            if (!int.TryParse(TxtInstallerSizeMB.Text.Trim(), out var mb) || mb < 0) mb = 0;
+            return Math.Min(mb, ConfigModel.MaxInstallerSizeMB);
+        }
+
+        private void SetInstallerSizeMB(int mb)
+        {
+            mb = Math.Clamp(mb, 0, ConfigModel.MaxInstallerSizeMB);
+            _suppressSizeSync = true;
+            TxtInstallerSizeMB.Text = mb.ToString();
+            SldInstallerSize.Value = MBToSliderPos(mb);
+            UpdateInstallerSizeReadout(mb);
+            _suppressSizeSync = false;
+        }
+
+        private void UpdateInstallerSizeReadout(int mb)
+        {
+            if (LblInstallerSizeReadout == null) return;
+            LblInstallerSizeReadout.Text = mb >= 1024
+                ? $"= {mb / 1024.0:0.##} GB"
+                : (mb > 0 ? "" : "smallest possible");
+        }
+
+        private void InstallerSizeSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_suppressSizeSync) return;
+            var mb = SliderPosToMB(e.NewValue);
+            _suppressSizeSync = true;
+            TxtInstallerSizeMB.Text = mb.ToString();
+            UpdateInstallerSizeReadout(mb);
+            _suppressSizeSync = false;
+        }
+
+        private void InstallerSizeMB_Changed(object sender, TextChangedEventArgs e)
+        {
+            if (_suppressSizeSync) return;
+            var mb = ParseInstallerSizeMB();
+            _suppressSizeSync = true;
+            SldInstallerSize.Value = MBToSliderPos(mb);
+            UpdateInstallerSizeReadout(mb);
+            _suppressSizeSync = false;
+        }
     }
 }

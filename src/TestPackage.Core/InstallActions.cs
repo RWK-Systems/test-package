@@ -38,7 +38,7 @@ namespace TestPackage.Core
             _manifest.InstalledBy = $@"{Environment.UserDomainName}\{Environment.UserName}";
             _manifest.InstallDate = DateTime.Now;
             _manifest.AppName = _config.Get("General", "AppName", "TestPackage");
-            _manifest.AppVersion = _config.Get("General", "AppVersion", "2.5.0");
+            _manifest.AppVersion = _config.Get("General", "AppVersion", "2.5.1");
             _manifest.AppGUID = _config.Get("General", "AppGUID");
             _manifest.Components = selectedComponents;
             _manifest.DesktopShortcut = desktopShortcut;
@@ -60,7 +60,6 @@ namespace TestPackage.Core
 
             CreateDirectories(installDir);
             CopyApplicationFiles(installDir);
-            CreateInstallerPadding(installDir);
             CreateTestFiles(installDir);
             WriteRegistryEntries(installDir);
             CreateComponentFiles(installDir, selectedComponents);
@@ -157,29 +156,6 @@ namespace TestPackage.Core
             }
         }
 
-        private void CreateInstallerPadding(string installDir)
-        {
-            var sizeMB = GetRequestedSizeMB();
-            if (sizeMB == 0) return;
-
-            long sizeBytes = (long)sizeMB * 1024L * 1024L;
-            var payloadPath = Path.Combine(installDir, "payload.dat");
-            try
-            {
-                using (var fs = new FileStream(payloadPath, FileMode.Create, FileAccess.Write))
-                {
-                    fs.SetLength(sizeBytes);
-                }
-                _manifest.CreatedFiles.Add(payloadPath);
-                _manifest.InstallerPaddingBytes = sizeBytes;
-                _log($"Created installer payload: {payloadPath} ({FormatSize(sizeBytes)})");
-            }
-            catch (Exception ex)
-            {
-                _log($"Warning: Could not create installer payload: {ex.Message}");
-            }
-        }
-
         private static string FormatSize(long bytes)
         {
             string[] units = { "B", "KB", "MB", "GB", "TB" };
@@ -193,7 +169,7 @@ namespace TestPackage.Core
         {
             var sb = new System.Text.StringBuilder();
             var appName = _config.Get("General", "AppName", "TestPackage");
-            var appVersion = _config.Get("General", "AppVersion", "2.5.0");
+            var appVersion = _config.Get("General", "AppVersion", "2.5.1");
 
             sb.AppendLine($"{appName} v{appVersion}");
             sb.AppendLine(new string('=', 60));
@@ -244,8 +220,6 @@ namespace TestPackage.Core
                 sb.AppendLine("  Startup entry:        Created");
             if (_manifest.FontInstalled)
                 sb.AppendLine("  Font:                 Installed");
-            if (_manifest.InstallerPaddingBytes > 0)
-                sb.AppendLine($"  Installer payload:    {FormatSize(_manifest.InstallerPaddingBytes)} (payload.dat)");
             if (_manifest.IntentionallyLeaveFiles)
                 sb.AppendLine("  Leftover files:       Will remain after uninstall");
             if (_manifest.IntentionallyLeaveRegistry)
@@ -817,7 +791,7 @@ namespace TestPackage.Core
         private void RegisterUninstaller(string installDir)
         {
             var appName = _config.Get("General", "AppName", "TestPackage");
-            var appVersion = _config.Get("General", "AppVersion", "2.5.0");
+            var appVersion = _config.Get("General", "AppVersion", "2.5.1");
             var publisher = _config.Get("General", "AppPublisher", "RWK Systems");
             var guid = _config.Get("General", "AppGUID");
             var exePath = Path.Combine(installDir, AppExeName);

@@ -73,7 +73,7 @@ namespace TestPackageSmokeTest
                 ("AppPaths", "Enabled", "App Paths"),
                 ("Startup", "Enabled", "Startup Entry"),
                 ("Fonts", "Enabled", "Font Installation"),
-                ("InstallerSize", "Enabled", "Installer Size Padding"),
+                ("InstallerSize", "Enabled", "Installer Size"),
             };
             foreach (var (section, key, label) in features)
             {
@@ -201,33 +201,28 @@ namespace TestPackageSmokeTest
 
             Console.WriteLine();
 
-            // --- Installer Size Padding Test ---
+            // --- Installer Size Disk-Space Check Test ---
+            // Installer size pads the generated setup EXE (done by the Configurator).
+            // At install time the only effect is the target-drive free-space check;
+            // the install directory itself must NOT be padded.
             Console.WriteLine(separator);
-            Console.WriteLine("[Installer Size Test] Padding install to 2 MB");
+            Console.WriteLine("[Installer Size Test] Disk-space check, no install-dir padding");
             Console.WriteLine(separator);
             var sizeTestDir = Path.Combine(Path.GetTempPath(), "TestPackage_SizeTest_" + Guid.NewGuid().ToString("N")[..8]);
             try
             {
                 config.Set("InstallerSize", "Enabled", "true");
-                config.Set("InstallerSize", "SizeMB", "2");
+                config.Set("InstallerSize", "SizeMB", "1");
 
                 var sizeInstaller = new InstallActions(config, msg => Console.WriteLine($"  {msg}"));
                 sizeInstaller.Execute(sizeTestDir, "User", selectedComponents, false, false, false);
 
-                var payloadPath = Path.Combine(sizeTestDir, "payload.dat");
-                long expected = 2L * 1024L * 1024L;
-                if (!File.Exists(payloadPath))
+                if (File.Exists(Path.Combine(sizeTestDir, "payload.dat")))
                 {
-                    Console.WriteLine("  >>> SIZE TEST FAILED: payload.dat not created <<<");
+                    Console.WriteLine("  >>> SIZE TEST FAILED: install dir was padded (payload.dat present) <<<");
                     return 1;
                 }
-                long actual = new FileInfo(payloadPath).Length;
-                Console.WriteLine($"  payload.dat size: {actual} bytes (expected {expected})");
-                if (actual != expected)
-                {
-                    Console.WriteLine("  >>> SIZE TEST FAILED: payload size mismatch <<<");
-                    return 1;
-                }
+                Console.WriteLine("  Disk-space check passed and install dir not padded.");
                 Console.WriteLine("  >>> SIZE TEST PASSED <<<");
             }
             catch (Exception ex)

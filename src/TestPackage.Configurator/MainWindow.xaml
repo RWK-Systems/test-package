@@ -23,7 +23,7 @@
                     <TextBlock Text="TestPackage" FontSize="20" FontWeight="Bold" Foreground="White"/>
                     <TextBlock Text="Design and generate simulated installers for testing" FontSize="11" Foreground="#CCE5FF" Margin="0,2,0,0"/>
                 </StackPanel>
-                <TextBlock Grid.Column="1" Text="v2.5.0" Foreground="#99CCFF" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="v2.5.1" Foreground="#99CCFF" FontSize="11" VerticalAlignment="Center"/>
             </Grid>
         </Border>
 
@@ -116,10 +116,15 @@
                         <Border Style="{StaticResource Card}">
                             <StackPanel>
                                 <TextBlock Style="{StaticResource SectionLabel}" Text="Installer Size" Margin="0,0,0,6"/>
-                                <CheckBox x:Name="ChkInstallerSize" Style="{StaticResource FeatureToggle}" Content="Pad the installation to a target size on disk"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="The installer checks free space on the target drive, then writes a payload so the install occupies the requested size. Default is the smallest possible install." FontStyle="Italic" Foreground="#888"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Target Size (GB, 0 to 100)"/>
-                                <TextBox x:Name="TxtInstallerSizeGB" Style="{StaticResource FieldTextBox}" Width="100" HorizontalAlignment="Left" Text="0"/>
+                                <CheckBox x:Name="ChkInstallerSize" Style="{StaticResource FeatureToggle}" Content="Set the size of the generated setup .exe"/>
+                                <TextBlock Style="{StaticResource FieldLabel}" Text="Pads the generated installer EXE to the target size (0 MB up to 100 GB). The installer also verifies the target drive has enough free space before installing. Default is the smallest possible installer." FontStyle="Italic" Foreground="#888" TextWrapping="Wrap"/>
+                                <TextBlock Style="{StaticResource FieldLabel}" Text="Drag for a quick size — fine megabyte control on the left, scaling up to gigabytes on the right." FontStyle="Italic" Foreground="#888" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <Slider x:Name="SldInstallerSize" Minimum="0" Maximum="100" Width="380" HorizontalAlignment="Left" Margin="0,4,0,4" ValueChanged="InstallerSizeSlider_Changed"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Exact size (MB)" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBox x:Name="TxtInstallerSizeMB" Style="{StaticResource FieldTextBox}" Width="120" Text="0" TextChanged="InstallerSizeMB_Changed"/>
+                                    <TextBlock x:Name="LblInstallerSizeReadout" Foreground="#666" FontSize="12" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                </StackPanel>
                             </StackPanel>
                         </Border>
                     </StackPanel>
