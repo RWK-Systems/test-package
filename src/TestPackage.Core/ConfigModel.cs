@@ -37,7 +37,7 @@ namespace TestPackage.Core
         public string DefaultContext { get; set; } = "Machine";
 
         // Target Directory
-        public string DefaultPath { get; set; } = @"%ProgramFiles%\RWK Systems\TestPackage";
+        public string DefaultPath { get; set; } = @"%ProgramFiles%\Your Mom\My Test Package";
         public bool AllowCustomPath { get; set; } = true;
 
         // Components

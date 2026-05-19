@@ -66,7 +66,7 @@
                             <StackPanel>
                                 <TextBlock Style="{StaticResource SectionLabel}" Text="Application Metadata" Margin="0,0,0,6"/>
                                 <TextBlock Style="{StaticResource FieldLabel}" Text="Application Name"/>
-                                <TextBox x:Name="TxtAppName" Style="{StaticResource FieldTextBox}"/>
+                                <TextBox x:Name="TxtAppName" Style="{StaticResource FieldTextBox}" TextChanged="DefaultPathSource_TextChanged"/>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -78,7 +78,7 @@
                                     </StackPanel>
                                     <StackPanel Grid.Column="1">
                                         <TextBlock Style="{StaticResource FieldLabel}" Text="Publisher"/>
-                                        <TextBox x:Name="TxtAppPublisher" Style="{StaticResource FieldTextBox}"/>
+                                        <TextBox x:Name="TxtAppPublisher" Style="{StaticResource FieldTextBox}" TextChanged="DefaultPathSource_TextChanged"/>
                                     </StackPanel>
                                 </Grid>
                                 <TextBlock Style="{StaticResource FieldLabel}" Text="URL"/>
@@ -109,7 +109,7 @@
                             <StackPanel>
                                 <TextBlock Style="{StaticResource SectionLabel}" Text="Target Directory" Margin="0,0,0,6"/>
                                 <TextBlock Style="{StaticResource FieldLabel}" Text="Default Install Path"/>
-                                <TextBox x:Name="TxtDefaultPath" Style="{StaticResource FieldTextBox}"/>
+                                <TextBox x:Name="TxtDefaultPath" Style="{StaticResource FieldTextBox}" TextChanged="DefaultPath_TextChanged"/>
                                 <CheckBox x:Name="ChkAllowCustomPath" Style="{StaticResource FeatureToggle}" Content="Allow user to customize path"/>
                             </StackPanel>
                         </Border>

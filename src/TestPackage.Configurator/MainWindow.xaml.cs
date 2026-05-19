@@ -373,6 +373,7 @@ namespace TestPackage.Configurator
             TxtInstallerExeName.Text = m.InstallerExeName;
             TxtAppExeName.Text = m.AppExeName;
 
+            _suppressPathSync = true;
             TxtAppName.Text = m.AppName;
             TxtAppVersion.Text = m.AppVersion;
             TxtAppPublisher.Text = m.AppPublisher;
@@ -381,6 +382,8 @@ namespace TestPackage.Configurator
             ChkRequireAdmin.IsChecked = m.RequireAdmin;
             CboDefaultContext.SelectedIndex = m.DefaultContext.Equals("User", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
             TxtDefaultPath.Text = m.DefaultPath;
+            _userEditedDefaultPath = !string.Equals(m.DefaultPath, DerivePath(m.AppPublisher, m.AppName), StringComparison.OrdinalIgnoreCase);
+            _suppressPathSync = false;
             ChkAllowCustomPath.IsChecked = m.AllowCustomPath;
             ChkInstallerSize.IsChecked = m.InstallerSizeEnabled;
             SetInstallerSizeMB(m.InstallerSizeMB);
@@ -744,6 +747,38 @@ namespace TestPackage.Configurator
         { foreach (ComboBoxItem item in combo.Items) if (item.Content?.ToString()?.Equals(value, StringComparison.OrdinalIgnoreCase) == true) { item.IsSelected = true; return; } }
 
         private static string GetComboText(ComboBox combo) => (combo.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "";
+
+        // ===== Default install path auto-derived from publisher + app name =====
+
+        private bool _suppressPathSync;
+        private bool _userEditedDefaultPath;
+
+        private static string DerivePath(string publisher, string appName)
+        {
+            var p = (publisher ?? "").Trim();
+            var a = (appName ?? "").Trim();
+            if (p.Length == 0 && a.Length == 0) return @"%ProgramFiles%";
+            if (p.Length == 0) return $@"%ProgramFiles%\{a}";
+            if (a.Length == 0) return $@"%ProgramFiles%\{p}";
+            return $@"%ProgramFiles%\{p}\{a}";
+        }
+
+        private void DefaultPathSource_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_suppressPathSync) return;
+            if (_userEditedDefaultPath) return;
+            _suppressPathSync = true;
+            TxtDefaultPath.Text = DerivePath(TxtAppPublisher.Text, TxtAppName.Text);
+            _suppressPathSync = false;
+        }
+
+        private void DefaultPath_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_suppressPathSync) return;
+            // Any user-typed change opts out of auto-derivation. Clearing the field
+            // re-enables it so they can let it follow publisher/app name again.
+            _userEditedDefaultPath = TxtDefaultPath.Text.Trim().Length > 0;
+        }
 
         // ===== Installer Size (non-linear slider <-> exact MB textbox) =====
 
