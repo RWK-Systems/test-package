@@ -50,6 +50,6 @@ jobs:
         Invoke-WebRequest -Uri https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
         .\wingetcreate.exe update RWKSystems.TestPackage `
           --version ${{ steps.version.outputs.VERSION }} `
-          --urls "https://github.com/${{ github.repository }}/releases/download/${{ inputs.tag }}/TestPackageSetup.exe" `
+          --urls "https://github.com/${{ github.repository }}/releases/download/${{ inputs.tag }}/TestPackageSetup.exe|x64" `
           --submit `
           --token ${{ secrets.WINGET_CREATE_PAT }}
