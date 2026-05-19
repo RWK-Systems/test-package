@@ -73,6 +73,7 @@ namespace TestPackageSmokeTest
                 ("AppPaths", "Enabled", "App Paths"),
                 ("Startup", "Enabled", "Startup Entry"),
                 ("Fonts", "Enabled", "Font Installation"),
+                ("InstallerSize", "Enabled", "Installer Size Padding"),
             };
             foreach (var (section, key, label) in features)
             {
@@ -199,6 +200,47 @@ namespace TestPackageSmokeTest
             }
 
             Console.WriteLine();
+
+            // --- Installer Size Padding Test ---
+            Console.WriteLine(separator);
+            Console.WriteLine("[Installer Size Test] Padding install to 2 MB");
+            Console.WriteLine(separator);
+            var sizeTestDir = Path.Combine(Path.GetTempPath(), "TestPackage_SizeTest_" + Guid.NewGuid().ToString("N")[..8]);
+            try
+            {
+                config.Set("InstallerSize", "Enabled", "true");
+                config.Set("InstallerSize", "SizeMB", "2");
+
+                var sizeInstaller = new InstallActions(config, msg => Console.WriteLine($"  {msg}"));
+                sizeInstaller.Execute(sizeTestDir, "User", selectedComponents, false, false, false);
+
+                var payloadPath = Path.Combine(sizeTestDir, "payload.dat");
+                long expected = 2L * 1024L * 1024L;
+                if (!File.Exists(payloadPath))
+                {
+                    Console.WriteLine("  >>> SIZE TEST FAILED: payload.dat not created <<<");
+                    return 1;
+                }
+                long actual = new FileInfo(payloadPath).Length;
+                Console.WriteLine($"  payload.dat size: {actual} bytes (expected {expected})");
+                if (actual != expected)
+                {
+                    Console.WriteLine("  >>> SIZE TEST FAILED: payload size mismatch <<<");
+                    return 1;
+                }
+                Console.WriteLine("  >>> SIZE TEST PASSED <<<");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  >>> SIZE TEST FAILED: {ex.Message} <<<");
+                return 1;
+            }
+            finally
+            {
+                try { if (Directory.Exists(sizeTestDir)) Directory.Delete(sizeTestDir, true); } catch { }
+            }
+            Console.WriteLine();
+
             Console.WriteLine(separator);
             Console.WriteLine("  SMOKE TEST PASSED");
             Console.WriteLine($"  TestPackage by RWK Systems - https://rwksystems.com");

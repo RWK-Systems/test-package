@@ -23,7 +23,7 @@
                     <TextBlock Text="TestPackage" FontSize="20" FontWeight="Bold" Foreground="White"/>
                     <TextBlock Text="Design and generate simulated installers for testing" FontSize="11" Foreground="#CCE5FF" Margin="0,2,0,0"/>
                 </StackPanel>
-                <TextBlock Grid.Column="1" Text="v2.0.0" Foreground="#99CCFF" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="v2.5.0" Foreground="#99CCFF" FontSize="11" VerticalAlignment="Center"/>
             </Grid>
         </Border>
 
@@ -111,6 +111,15 @@
                                 <TextBlock Style="{StaticResource FieldLabel}" Text="Default Install Path"/>
                                 <TextBox x:Name="TxtDefaultPath" Style="{StaticResource FieldTextBox}"/>
                                 <CheckBox x:Name="ChkAllowCustomPath" Style="{StaticResource FeatureToggle}" Content="Allow user to customize path"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionLabel}" Text="Installer Size" Margin="0,0,0,6"/>
+                                <CheckBox x:Name="ChkInstallerSize" Style="{StaticResource FeatureToggle}" Content="Pad the installation to a target size on disk"/>
+                                <TextBlock Style="{StaticResource FieldLabel}" Text="The installer checks free space on the target drive, then writes a payload so the install occupies the requested size. Default is the smallest possible install." FontStyle="Italic" Foreground="#888"/>
+                                <TextBlock Style="{StaticResource FieldLabel}" Text="Target Size (GB, 0 to 100)"/>
+                                <TextBox x:Name="TxtInstallerSizeGB" Style="{StaticResource FieldTextBox}" Width="100" HorizontalAlignment="Left" Text="0"/>
                             </StackPanel>
                         </Border>
                     </StackPanel>

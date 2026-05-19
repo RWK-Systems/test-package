@@ -161,6 +161,11 @@ namespace TestPackage.Core
             sb.AppendLine($"ForceReboot={B(m.ForceReboot)}");
             sb.AppendLine();
 
+            sb.AppendLine("[InstallerSize]");
+            sb.AppendLine($"Enabled={B(m.InstallerSizeEnabled)}");
+            sb.AppendLine($"SizeMB={m.InstallerSizeMB}");
+            sb.AppendLine();
+
             sb.AppendLine("[UI]");
             sb.AppendLine($"BannerColor={m.BannerColor}");
             sb.AppendLine($"AccentColor={m.AccentColor}");

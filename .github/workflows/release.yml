@@ -106,11 +106,12 @@ jobs:
 
           Design and generate simulated installers for testing repackaging, application virtualization, and deployment solutions.
 
-          ### What's New in v2.0
+          ### What's New in v2.5
 
+          - **Configurable installer size** — Pad the installation to any size up to 100 GB to test how repackaging and virtualization tools handle large payloads
+          - **Disk-space prerequisite check** — The generated installer verifies free space on the target drive before installing
           - **Configurator GUI** — Design your test scenarios visually
           - **Generate Installer** — One click to create a simulated setup EXE
-          - Configurable EXE names (default: YourSimulatedSetup.exe / YourSimulatedApp.exe)
           - All installer behaviors configurable via the Configurator UI
 
           ### Download

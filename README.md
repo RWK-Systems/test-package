@@ -18,7 +18,7 @@ Packaging engineers need test installers. Most reach for whatever's handy — 7-
 
 ### 1. Configure
 
-Open **TestPackage Configurator** and design your test scenario. Choose from 15+ independently toggleable installer behaviors:
+Open **TestPackage Configurator** and design your test scenario. Choose from 16+ independently toggleable installer behaviors:
 
 | Category | Features |
 |----------|----------|
@@ -27,6 +27,7 @@ Open **TestPackage Configurator** and design your test scenario. Choose from 15+
 | **Services & Tasks** | Windows services, scheduled tasks, startup entries |
 | **Network & Security** | Firewall rules, custom URI protocol handlers |
 | **System Integration** | Active Setup, font installation, COM registration |
+| **Scale & Prerequisites** | Configurable installer size (up to 100 GB) with a target-drive free-space check |
 | **Uninstall Behavior** | Clean removal, or intentional leftovers for testing incomplete-uninstall detection |
 | **Wizard & UI** | Show/hide wizard pages, custom EULA text, banner colors, simulated install delay |
 

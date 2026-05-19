@@ -382,6 +382,8 @@ namespace TestPackage.Configurator
             CboDefaultContext.SelectedIndex = m.DefaultContext.Equals("User", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
             TxtDefaultPath.Text = m.DefaultPath;
             ChkAllowCustomPath.IsChecked = m.AllowCustomPath;
+            ChkInstallerSize.IsChecked = m.InstallerSizeEnabled;
+            TxtInstallerSizeGB.Text = (m.InstallerSizeMB / 1024.0).ToString("0.###");
 
             ChkShowWelcome.IsChecked = m.ShowWelcome;
             ChkShowEULA.IsChecked = m.ShowEULA;
@@ -476,6 +478,9 @@ namespace TestPackage.Configurator
             m.DefaultContext = CboDefaultContext.SelectedIndex == 1 ? "User" : "Machine";
             m.DefaultPath = TxtDefaultPath.Text.Trim();
             m.AllowCustomPath = ChkAllowCustomPath.IsChecked == true;
+            m.InstallerSizeEnabled = ChkInstallerSize.IsChecked == true;
+            var gb = double.TryParse(TxtInstallerSizeGB.Text, out var g) && g > 0 ? g : 0;
+            m.InstallerSizeMB = Math.Min((int)Math.Round(gb * 1024), ConfigModel.MaxInstallerSizeMB);
 
             m.ShowWelcome = ChkShowWelcome.IsChecked == true;
             m.ShowEULA = ChkShowEULA.IsChecked == true;
