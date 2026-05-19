@@ -416,7 +416,10 @@ namespace TestPackage.Configurator
             ChkDesktopShortcut.IsChecked = m.CreateDesktopShortcut;
             TxtDesktopShortcutName.Text = m.DesktopShortcutName;
             ChkStartMenuEntry.IsChecked = m.CreateStartMenuEntry;
+            _suppressPathSync = true;
             TxtStartMenuFolder.Text = m.StartMenuFolder;
+            _userEditedStartMenuFolder = !string.Equals(m.StartMenuFolder, DeriveStartMenu(m.AppPublisher, m.AppName), StringComparison.OrdinalIgnoreCase);
+            _suppressPathSync = false;
             ChkPinToStartMenu.IsChecked = m.PinToStartMenu;
 
             ChkFileAssociations.IsChecked = m.FileAssociationsEnabled;
@@ -748,10 +751,11 @@ namespace TestPackage.Configurator
 
         private static string GetComboText(ComboBox combo) => (combo.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "";
 
-        // ===== Default install path auto-derived from publisher + app name =====
+        // ===== Default install path & Start Menu folder auto-derived from publisher + app name =====
 
         private bool _suppressPathSync;
         private bool _userEditedDefaultPath;
+        private bool _userEditedStartMenuFolder;
 
         private static string DerivePath(string publisher, string appName)
         {
@@ -763,12 +767,24 @@ namespace TestPackage.Configurator
             return $@"%ProgramFiles%\{p}\{a}";
         }
 
+        private static string DeriveStartMenu(string publisher, string appName)
+        {
+            var p = (publisher ?? "").Trim();
+            var a = (appName ?? "").Trim();
+            if (p.Length == 0 && a.Length == 0) return "";
+            if (p.Length == 0) return a;
+            if (a.Length == 0) return p;
+            return $@"{p}\{a}";
+        }
+
         private void DefaultPathSource_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (_suppressPathSync) return;
-            if (_userEditedDefaultPath) return;
             _suppressPathSync = true;
-            TxtDefaultPath.Text = DerivePath(TxtAppPublisher.Text, TxtAppName.Text);
+            if (!_userEditedDefaultPath)
+                TxtDefaultPath.Text = DerivePath(TxtAppPublisher.Text, TxtAppName.Text);
+            if (!_userEditedStartMenuFolder)
+                TxtStartMenuFolder.Text = DeriveStartMenu(TxtAppPublisher.Text, TxtAppName.Text);
             _suppressPathSync = false;
         }
 
@@ -778,6 +794,12 @@ namespace TestPackage.Configurator
             // Any user-typed change opts out of auto-derivation. Clearing the field
             // re-enables it so they can let it follow publisher/app name again.
             _userEditedDefaultPath = TxtDefaultPath.Text.Trim().Length > 0;
+        }
+
+        private void StartMenuFolder_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_suppressPathSync) return;
+            _userEditedStartMenuFolder = TxtStartMenuFolder.Text.Trim().Length > 0;
         }
 
         // ===== Installer Size (non-linear slider <-> exact MB textbox) =====

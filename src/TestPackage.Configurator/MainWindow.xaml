@@ -223,7 +223,7 @@
                                 <TextBox x:Name="TxtDesktopShortcutName" Style="{StaticResource FieldTextBox}"/>
                                 <CheckBox x:Name="ChkStartMenuEntry" Style="{StaticResource FeatureToggle}" Content="Create Start Menu entry"/>
                                 <TextBlock Style="{StaticResource FieldLabel}" Text="Start Menu Folder"/>
-                                <TextBox x:Name="TxtStartMenuFolder" Style="{StaticResource FieldTextBox}"/>
+                                <TextBox x:Name="TxtStartMenuFolder" Style="{StaticResource FieldTextBox}" TextChanged="StartMenuFolder_TextChanged"/>
                                 <CheckBox x:Name="ChkPinToStartMenu" Style="{StaticResource FeatureToggle}" Content="Pin to Start Menu"/>
                             </StackPanel>
                         </Border>

@@ -62,7 +62,7 @@ namespace TestPackage.Core
         public bool CreateDesktopShortcut { get; set; } = true;
         public string DesktopShortcutName { get; set; } = "TestPackage";
         public bool CreateStartMenuEntry { get; set; } = true;
-        public string StartMenuFolder { get; set; } = @"RWK Systems\TestPackage";
+        public string StartMenuFolder { get; set; } = @"Your Mom\My Test Package";
         public bool PinToStartMenu { get; set; }
 
         // File Associations
