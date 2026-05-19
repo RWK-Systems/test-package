@@ -16,7 +16,7 @@ namespace TestPackage.Core
         public string AppURL { get; set; } = "https://stupidapps.com";
         public string AppGUID { get; set; } = "{E8A3B025-7F4D-4B1A-9C6E-2D8F5A1B3C4D}";
         public bool RequireAdmin { get; set; }
-        public string AppExeName { get; set; } = "MySimulatedApp.exe";
+        public string AppExeName { get; set; } = "YourSimulatedApp.exe";
         public string InstallerExeName { get; set; } = "YourSimulatedSetup.exe";
 
         // Wizard Pages
