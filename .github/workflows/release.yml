@@ -14,6 +14,13 @@ permissions:
   contents: write
   id-token: write
 
+defaults:
+  run:
+    # Fail fast: multi-command pwsh blocks must abort on any error, including
+    # native command exit codes. Without this a silent compile failure would
+    # ride through to signing and produce a broken release.
+    shell: pwsh
+
 jobs:
   release:
     runs-on: windows-latest
@@ -63,21 +70,31 @@ jobs:
 
     - name: Build and run smoke test
       run: |
+        $ErrorActionPreference = 'Stop'
         dotnet publish src\TestPackageSmokeTest\TestPackageSmokeTest.csproj -c Release -r win-x64 --self-contained false -o dist\smoketest
+        if ($LASTEXITCODE) { exit 1 }
         copy config.ini dist\smoketest\config.ini
+        if ($LASTEXITCODE) { exit 1 }
         dist\smoketest\TestPackageSmokeTest.exe 2>&1 | tee dist\smoke-test-output.txt
-        if ($LASTEXITCODE -ne 0) { exit 1 }
+        if ($LASTEXITCODE) { exit 1 }
 
     - name: Build templates (Self-contained)
       run: |
+        $ErrorActionPreference = 'Stop'
         dotnet publish src\TestPackageApp\TestPackageApp.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained\templates
+        if ($LASTEXITCODE) { exit 1 }
         dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained\templates
+        if ($LASTEXITCODE) { exit 1 }
         copy config.ini dist\self-contained\templates\config.ini
+        if ($LASTEXITCODE) { exit 1 }
 
     - name: Build Configurator (Self-contained)
       run: |
+        $ErrorActionPreference = 'Stop'
         dotnet publish src\TestPackage.Configurator\TestPackage.Configurator.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained\configurator
+        if ($LASTEXITCODE) { exit 1 }
         xcopy dist\self-contained\templates dist\self-contained\configurator\templates\ /E /I /Y
+        if ($LASTEXITCODE) { exit 1 }
 
     - name: Install NSIS
       run: choco install nsis -y --no-progress

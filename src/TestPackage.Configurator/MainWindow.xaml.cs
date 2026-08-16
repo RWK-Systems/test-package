@@ -1100,9 +1100,11 @@ namespace TestPackage.Configurator
 
         private static UIElement? FindFirstEditable(UIElement element)
         {
+            // UIElementCollection is non-generic (yields object); type the loop
+            // variable so the return value is the required UIElement.
             if (element is StackPanel sp)
             {
-                foreach (var c in sp.Children)
+                foreach (UIElement c in sp.Children)
                     if (c is TextBox || c is ComboBox) return c;
             }
             return null;
