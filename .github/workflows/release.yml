@@ -3,6 +3,12 @@ name: Release
 on:
   push:
     tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (without leading v). E.g. 3.0.0-alpha.1'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -13,17 +19,42 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Extract version and pre-release flag
+    - name: Determine version, tag and pre-release flag
       id: version
       shell: pwsh
       run: |
-        $tag = "${{ github.ref_name }}"
-        $version = $tag.TrimStart('v')
+        if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+          $version = "${{ inputs.version }}".TrimStart('v').Trim()
+          $tag = "v$version"
+        } else {
+          $tag = "${{ github.ref_name }}"
+          $version = $tag.TrimStart('v')
+        }
         $isPrerelease = $version -match '-'
         echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+        echo "TAG=$tag" >> $env:GITHUB_OUTPUT
         echo "PRERELEASE=$($isPrerelease.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+        Write-Host "Releasing version=$version tag=$tag prerelease=$isPrerelease from ref=${{ github.ref }}"
+
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Create and push tag (dispatch mode)
+      if: github.event_name == 'workflow_dispatch'
+      shell: pwsh
+      run: |
+        $tag = "${{ steps.version.outputs.TAG }}"
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        $existing = git tag --list $tag
+        if ([string]::IsNullOrEmpty($existing)) {
+          git tag -a $tag -m "Release $tag"
+          git push origin $tag
+          Write-Host "Created and pushed tag $tag at $(git rev-parse HEAD)"
+        } else {
+          Write-Host "Tag $tag already exists at $(git rev-list -n 1 $tag); leaving as-is."
+        }
 
     - name: Setup .NET 8
       uses: actions/setup-dotnet@v4
@@ -100,6 +131,7 @@ jobs:
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
+        tag_name: ${{ steps.version.outputs.TAG }}
         name: TestPackage v${{ steps.version.outputs.VERSION }}
         body: |
           ## TestPackage v${{ steps.version.outputs.VERSION }}
@@ -119,7 +151,7 @@ jobs:
 
           ### Download
 
-          **[TestPackageSetup.exe](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/TestPackageSetup.exe)** — Self-contained installer (no .NET runtime required)
+          **[TestPackageSetup.exe](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.TAG }}/TestPackageSetup.exe)** — Self-contained installer (no .NET runtime required)
 
           ### Install via winget
 
