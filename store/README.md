@@ -5,7 +5,7 @@ TestPackage uses the Microsoft Store's unpackaged Win32 (EXE) submission path. T
 ## One-time Partner Center setup
 
 1. Sign in to Partner Center with an active Windows developer account.
-2. Reserve the product name **TestPackage**.
+2. Reserve the product name **TestPackage Generator**.
 3. Create a new **EXE or MSI** app submission.
 4. Use the values in `submission.json` and the copy in `listing-en-US.md`.
 5. Upload the required Store artwork and screenshots.

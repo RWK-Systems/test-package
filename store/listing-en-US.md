@@ -1,4 +1,4 @@
-# TestPackage
+# TestPackage Generator
 
 ## Short description
 

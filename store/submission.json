@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "product": {
-    "name": "TestPackage",
+    "name": "TestPackage Generator",
     "publisher": "RWK Systems",
     "category": "Developer tools",
     "pricing": "Free",
@@ -21,6 +21,6 @@
   "support": {
     "website": "https://www.rwksystems.com/test-package/",
     "support": "https://github.com/RWK-Systems/test-package/issues",
-    "privacyPolicy": "https://www.rwksystems.com/privacy-policy/"
+    "privacyPolicy": "https://www.rwksystems.com/privacy/"
   }
 }
