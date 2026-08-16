@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <title>TestPackage — Storyboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&amp;display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { margin: 0; background: #c9c7c6; }
+    a { color: var(--color-accent); } a:hover { color: var(--color-accent-700); }
+    ::-webkit-scrollbar { width: 10px; } ::-webkit-scrollbar-thumb { background: var(--color-neutral-300); }
+  </style>
+</helmet>
+<div style="font-family: var(--font-body); color: var(--color-text); width: 1560px; height: 960px; margin: 24px auto; background: var(--color-bg); border: 2px solid var(--color-text); display: flex; flex-direction: column; overflow: hidden; position: relative;" data-screen-label="Storyboard">
+  <div style="display: flex; align-items: center; gap: var(--space-4); padding: 10px var(--space-4); border-bottom: 2px solid var(--color-text);">
+    <div style="display: flex; align-items: baseline; gap: 10px;">
+      <div style="font-family: var(--font-heading); font-weight: 800; font-size: 18px;">TESTPACKAGE</div>
+      <div style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.55;">Installer generator · v3.0</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: var(--space-2); margin-left: var(--space-6);">
+      <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5;">Start from</span>
+      <sc-for list="{{ presets }}" as="pr" hint-placeholder-count="4">
+        <button style="{{ pr.style }}" style-hover="border-color: var(--color-text);" onClick="{{ pr.apply }}">{{ pr.label }}</button>
+      </sc-for>
+    </div>
+    <div style="margin-left: auto; display: flex; gap: var(--space-2);">
+      <button class="btn btn-secondary" style="font-weight: 600;">Load</button>
+      <button class="btn btn-secondary" style="font-weight: 600;">Save</button>
+      <button class="btn btn-secondary" style="font-weight: 600;">Preview wizard</button>
+      <button class="btn btn-primary" onClick="{{ openGen }}">Generate installer</button>
+    </div>
+  </div>
+
+  <div style="display: flex; align-items: stretch; border-bottom: 2px solid var(--color-text);">
+    <div style="padding: 12px var(--space-4); background: var(--color-accent-100); display: flex; flex-direction: column; justify-content: center; width: 300px; border-right: 2px solid var(--color-text);">
+      <div style="font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-accent-800); font-weight: 600;">The fake app</div>
+      <div style="font-family: var(--font-heading); font-weight: 800; font-size: 20px; line-height: 1.15;">{{ appName }}</div>
+      <div style="font-size: 12px; opacity: 0.7;">v{{ appVersion }} · {{ publisher }}</div>
+    </div>
+    <div style="flex: 1; padding: 12px var(--space-4); display: flex; align-items: center; font-size: 13px; line-height: 1.5;">
+      <div>
+        This storyboard is the <b>life of your generated installer</b>, left to right. Click any frame to edit it; click a chip to turn that behavior on or off.
+        <span style="opacity: 0.6;">Output: </span><b style="font-family: ui-monospace, monospace;">{{ setupExe }}</b>
+        <span style="opacity: 0.6;"> → installs </span><b style="font-family: ui-monospace, monospace;">{{ appExe }}</b><span style="opacity: 0.6;"> + audit viewer.</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1.25fr 1fr 1fr; border-bottom: 2px solid var(--color-text); background: var(--color-bg);">
+    <sc-for list="{{ stages }}" as="st" hint-placeholder-count="5">
+      <div onClick="{{ st.pick }}" style="{{ st.style }}" style-hover="background: color-mix(in srgb, var(--color-text) 4%, transparent);">
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+          <div style="{{ st.numStyle }}">{{ st.num }}</div>
+          <div style="font-family: var(--font-heading); font-weight: 800; font-size: 15px;">{{ st.title }}</div>
+        </div>
+        <div style="font-size: 11px; opacity: 0.55; margin: 2px 0 10px;">{{ st.sub }}</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 5px; align-content: flex-start;">
+          <sc-for list="{{ st.chips }}" as="ch" hint-placeholder-count="5">
+            <span onClick="{{ ch.toggle }}" style="{{ ch.style }}" style-hover="border-color: var(--color-text);">{{ ch.label }}</span>
+          </sc-for>
+        </div>
+        <div style="margin-top: auto; padding-top: 10px; font-size: 11px; font-weight: 600; color: var(--color-accent-800);">{{ st.summary }}</div>
+        <div style="{{ st.editStyle }}">{{ st.editLabel }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="flex: 1; display: grid; grid-template-columns: 1fr auto; min-height: 0;">
+    <div style="overflow-y: auto; padding: var(--space-6);">
+      <div style="font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-accent); font-weight: 600;">Frame {{ selNum }}</div>
+      <h2 style="font-size: 24px; margin-bottom: 4px;">{{ selTitle }}</h2>
+      <p style="font-size: 13px; opacity: 0.65; max-width: 560px;">{{ selDesc }}</p>
+      <hr class="hr">
+
+      <sc-if value="{{ isIdentity }}" hint-placeholder-val="{{ false }}">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); max-width: 700px;">
+          <div class="field"><label>Application name</label><input class="input" value="{{ appName }}" data-f="name" onChange="{{ onIdField }}"></div>
+          <div class="field"><label>Publisher</label><input class="input" value="{{ publisher }}" data-f="publisher" onChange="{{ onIdField }}"></div>
+          <div class="field"><label>Version</label><input class="input" value="{{ appVersion }}" data-f="version" onChange="{{ onIdField }}"></div>
+          <div class="field"><label>URL</label><input class="input" value="{{ url }}" data-f="url" onChange="{{ onIdField }}"></div>
+          <div class="field" style="grid-column: span 2;"><label>Product GUID</label>
+            <div style="display: flex; gap: var(--space-2);">
+              <input class="input" value="{{ guid }}" style="font-family: ui-monospace, monospace; font-size: 12px;" data-f="guid" onChange="{{ onIdField }}">
+              <button class="btn btn-secondary" style="white-space: nowrap; font-weight: 600;" onClick="{{ newGuid }}">New GUID</button>
+            </div>
+          </div>
+          <div class="field"><label>Install context</label>
+            <div class="seg">
+              <label class="seg-opt"><input type="radio" name="ctx2" checked="{{ ctxUser }}" onChange="{{ setCtxUser }}">Per-user</label>
+              <label class="seg-opt"><input type="radio" name="ctx2" checked="{{ ctxMachine }}" onChange="{{ setCtxMachine }}">Per-machine (UAC)</label>
+            </div>
+          </div>
+          <div class="field"><label>Payload size — {{ sizeLabel }}</label>
+            <input type="range" min="0" max="100" value="{{ sizePct }}" onChange="{{ onSize }}" style="width: 100%; accent-color: var(--color-accent);">
+            <div style="font-size: 11px; opacity: 0.55;">Fine MB control left, GB right. Pads the .exe for large-payload tests.</div>
+          </div>
+          <div class="field" style="grid-column: span 2;"><label>Install directory <span style="opacity: 0.5;">— derived from Publisher\App Name, type to override</span></label>
+            <input class="input" value="{{ installDir }}" style="font-family: ui-monospace, monospace; font-size: 12px;" data-f="dir" onChange="{{ onIdField }}">
+          </div>
+          <div class="field"><label>Installer EXE name</label><input class="input" value="{{ setupExe }}" style="font-family: ui-monospace, monospace; font-size: 12px;" data-f="setupExe" onChange="{{ onIdField }}"></div>
+          <div class="field"><label>Fake app EXE name</label><input class="input" value="{{ appExe }}" style="font-family: ui-monospace, monospace; font-size: 12px;" data-f="appExe" onChange="{{ onIdField }}"></div>
+          <div class="field" style="grid-column: span 2;"><label>Output folder</label>
+            <div style="display: flex; gap: var(--space-2);"><input class="input" value="C:\Users\BobKelly\Desktop" style="font-family: ui-monospace, monospace; font-size: 12px;"><button class="btn btn-secondary">…</button></div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isWizard }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width: 700px;">
+          <div style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.5; margin-bottom: 8px;">Page order — chips above mirror this list</div>
+          <sc-for list="{{ wizRows }}" as="pg" hint-placeholder-count="6">
+            <div style="{{ pg.rowStyle }}">
+              <div style="width: 28px; font-family: var(--font-heading); font-weight: 800; color: var(--color-accent);">{{ pg.num }}</div>
+              <div style="flex: 1; font-weight: 600; font-size: 14px;">{{ pg.label }}</div>
+              <sc-if value="{{ pg.hasDefault }}" hint-placeholder-val="{{ false }}">
+                <label class="seg" style="font-size: 11px;">
+                  <span class="seg-opt" style="padding: 3px 9px;"><input type="checkbox" checked="{{ pg.defOn }}" onChange="{{ pg.toggleDefault }}">pre-checked</span>
+                </label>
+              </sc-if>
+              <div style="font-size: 11px; opacity: 0.5;">{{ pg.note }}</div>
+              <div onClick="{{ pg.toggle }}" style="{{ pg.swStyle }}"><div style="{{ pg.knobStyle }}"></div></div>
+            </div>
+          </sc-for>
+          <hr class="hr">
+          <div class="field"><label>EULA text (License agreement page)</label>
+            <textarea class="input" rows="3" onChange="{{ onEula }}" value="{{ eula }}"></textarea>
+          </div>
+          <hr class="hr">
+          <div style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.5; margin-bottom: 8px;">Wizard appearance</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-4);">
+            <div class="field"><label>Banner color</label>
+              <div style="display: flex; gap: 8px;"><div style="width: 36px; height: 36px; flex: none; background: #0078D4; border: 1px solid var(--color-divider);"></div><input class="input" value="#0078D4"></div>
+            </div>
+            <div class="field"><label>Accent color</label>
+              <div style="display: flex; gap: 8px;"><div style="width: 36px; height: 36px; flex: none; background: #106EBE; border: 1px solid var(--color-divider);"></div><input class="input" value="#106EBE"></div>
+            </div>
+            <div class="field"><label>Install delay per step</label><input class="input" value="0.5 s"></div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isActions }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 0; max-width: 760px;">
+          <sc-for list="{{ actRows }}" as="ar" hint-placeholder-count="8">
+            <div style="{{ ar.rowStyle }}">
+              <div onClick="{{ ar.toggle }}" style="{{ ar.swStyle }}"><div style="{{ ar.knobStyle }}"></div></div>
+              <div style="flex: 1;">
+                <div style="font-weight: 600; font-size: 14px;">{{ ar.label }}</div>
+                <div style="font-size: 12px; font-family: ui-monospace, monospace; opacity: 0.6;">{{ ar.detail }}</div>
+              </div>
+              <sc-if value="{{ ar.editable }}" hint-placeholder-val="{{ false }}">
+                <button class="btn btn-ghost" style="font-size: 12px; font-weight: 600;" onClick="{{ ar.open }}">Edit data →</button>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isFirstRun }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width: 620px; display: flex; flex-direction: column; gap: var(--space-4);">
+          <div style="border: 1px solid var(--color-text); box-shadow: 3px 3px 0 var(--color-text); padding: var(--space-4); background: var(--color-bg);">
+            <div style="font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-accent); font-weight: 600; margin-bottom: 6px;">Companion audit app</div>
+            <div style="font-size: 13px; line-height: 1.6;">The install drops <b style="font-family: ui-monospace, monospace;">{{ appExe }}</b> — a small viewer that lists every file, key, service and rule the installer created, so you can verify your pipeline captured all of it.</div>
+          </div>
+          <div class="field"><label>Reboot after install</label>
+            <div class="seg">
+              <label class="seg-opt"><input type="radio" name="rb" checked="{{ rbNone }}" onChange="{{ setRbNone }}">None</label>
+              <label class="seg-opt"><input type="radio" name="rb" checked="{{ rbPrompt }}" onChange="{{ setRbPrompt }}">Prompt</label>
+              <label class="seg-opt"><input type="radio" name="rb" checked="{{ rbForce }}" onChange="{{ setRbForce }}">Force</label>
+            </div>
+          </div>
+          <div style="font-size: 13px; line-height: 1.6; opacity: 0.75;">
+            Silent install is built in:
+            <div style="font-family: ui-monospace, monospace; font-size: 12px; background: var(--color-surface); padding: 10px 12px; border: 1px solid var(--color-divider); margin-top: 6px;">{{ setupExe }} /S /dir="C:\Apps" /context=machine /components=CoreFiles</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isUninstall }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width: 700px;">
+          <sc-for list="{{ unRows }}" as="ur" hint-placeholder-count="6">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--color-divider);">
+              <div style="flex: 1;">
+                <div style="font-weight: 600; font-size: 14px;">{{ ur.label }}</div>
+                <div style="font-size: 11px; opacity: 0.55;">{{ ur.desc }}</div>
+              </div>
+              <span style="{{ ur.tagStyle }}">{{ ur.tagText }}</span>
+              <div onClick="{{ ur.toggle }}" style="{{ ur.swStyle }}"><div style="{{ ur.knobStyle }}"></div></div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ showReceipt }}" hint-placeholder-val="{{ true }}">
+    <div style="width: 372px; border-left: 2px solid var(--color-text); background: var(--color-surface); display: flex; flex-direction: column; min-height: 0;">
+      <div style="padding: var(--space-3) var(--space-4); border-bottom: 2px solid var(--color-text);">
+        <div style="font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-accent); font-weight: 600;">Receipt</div>
+        <div style="font-family: var(--font-heading); font-weight: 800; font-size: 16px;">Footprint on the test machine</div>
+      </div>
+      <div style="flex: 1; overflow-y: auto; padding: var(--space-3) var(--space-4);">
+        <sc-for list="{{ receipt }}" as="rc" hint-placeholder-count="5">
+          <div style="display: flex; justify-content: space-between; gap: 10px; font-size: 12px; padding: 6px 0; border-bottom: 1px solid var(--color-divider);">
+            <span style="{{ rc.style }}">{{ rc.label }}</span>
+            <b style="white-space: nowrap;">{{ rc.value }}</b>
+          </div>
+        </sc-for>
+      </div>
+      <div style="border-top: 2px solid var(--color-text); padding: var(--space-3) var(--space-4); font-size: 12px; background: var(--color-bg);">
+        <div style="display: flex; justify-content: space-between;"><span style="opacity: 0.6;">Installer size</span><b>{{ sizeLabel }}</b></div>
+        <div style="display: flex; justify-content: space-between;"><span style="opacity: 0.6;">Elevation</span><b>{{ elevLabel }}</b></div>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ listOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: color-mix(in srgb, var(--color-neutral-900) 35%, transparent); display: flex; justify-content: flex-end;" onClick="{{ closeList }}">
+      <div style="width: 860px; background: var(--color-bg); border-left: 2px solid var(--color-text); display: flex; flex-direction: column;" onClick="{{ eatClick }}">
+        <div style="display: flex; align-items: center; padding: var(--space-3) var(--space-4); border-bottom: 2px solid var(--color-text);">
+          <div>
+            <div style="font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-accent); font-weight: 600;">Install action</div>
+            <div style="font-family: var(--font-heading); font-weight: 800; font-size: 18px;">{{ listTitle }}</div>
+          </div>
+          <button class="btn btn-secondary" style="margin-left: auto; font-weight: 600;" onClick="{{ closeList }}">Close ✕</button>
+        </div>
+        <div style="flex: 1; display: grid; grid-template-columns: 1fr 340px; min-height: 0;">
+          <div style="overflow-y: auto; border-right: 1px solid var(--color-divider);">
+            <sc-for list="{{ listRows }}" as="lr" hint-placeholder-count="3">
+              <div onClick="{{ lr.pick }}" style="{{ lr.style }}" style-hover="background: color-mix(in srgb, var(--color-text) 5%, transparent);">
+                <div style="font-family: ui-monospace, monospace; font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ lr.primary }}</div>
+                <div style="font-size: 11px; opacity: 0.55; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ lr.secondary }}</div>
+              </div>
+            </sc-for>
+            <button class="btn btn-ghost" style="margin: var(--space-3); font-weight: 600;" onClick="{{ addRow }}">+ Add entry</button>
+          </div>
+          <div style="padding: var(--space-4); background: var(--color-surface); overflow-y: auto;">
+            <div style="font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.5; margin-bottom: var(--space-3);">Edit entry {{ detailNum }}</div>
+            <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+              <sc-for list="{{ detailFields }}" as="df" hint-placeholder-count="4">
+                <div class="field"><label>{{ df.label }}</label><input class="input" value="{{ df.value }}" style="font-family: ui-monospace, monospace; font-size: 12px;" data-f="{{ df.key }}" onChange="{{ onItemField }}"></div>
+              </sc-for>
+              <button class="btn btn-secondary" style="font-weight: 600; color: var(--color-accent-800);" onClick="{{ removeRow }}">Remove entry</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ genOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop" style="position: absolute;" onClick="{{ closeGen }}">
+      <div class="dialog" style="width: min(560px, 100%); border: 2px solid var(--color-text);" onClick="{{ eatClick }}">
+        <div class="dialog-title">Ready to generate</div>
+        <div class="dialog-body" style="opacity: 1;">
+          <div style="font-size: 13px; line-height: 1.6;">
+            <b style="font-family: ui-monospace, monospace;">{{ setupExe }}</b> ({{ sizeLabel }}) will be written to your output folder.<br>
+            When run, it shows <b>{{ pagesOnCount }} wizard pages</b>, performs <b>{{ actsOnCount }} install actions</b>, installs <b style="font-family: ui-monospace, monospace;">{{ appExe }}</b>, and registers "{{ appName }}" by {{ publisher }} in Add/Remove Programs.
+          </div>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" style="font-weight: 600;" onClick="{{ closeGen }}">Back</button>
+          <button class="btn btn-primary" onClick="{{ closeGen }}">Generate</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1620, &quot;height&quot;: 1010}, &quot;showReceipt&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Layout&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.fieldDefs = {
+      files: [{k:'path',l:'Path'},{k:'desc',l:'Description'}],
+      registry: [{k:'path',l:'Key path'},{k:'name',l:'Value name'},{k:'type',l:'Type'},{k:'data',l:'Data'}],
+      envvars: [{k:'name',l:'Variable'},{k:'value',l:'Value'}],
+      assoc: [{k:'ext',l:'Extension'},{k:'progid',l:'ProgID'},{k:'desc',l:'Description'},{k:'icon',l:'Icon path'}],
+      firewall: [{k:'name',l:'Rule name'},{k:'dir',l:'Direction'},{k:'action',l:'Action'},{k:'proto',l:'Protocol'},{k:'port',l:'Port'}],
+      protocol: [{k:'scheme',l:'Scheme'},{k:'desc',l:'Description'}],
+      ctxmenu: [{k:'label',l:'Menu label'},{k:'target',l:'Applies to'}]
+    };
+    this.state = {
+      sel: 2, listKey: null, detailIdx: 0, genOpen: false, reboot: 'none',
+      id: { name: 'My Test Package', version: '2.5.1', publisher: 'Your Mom', url: 'https://stupidapps.com',
+        guid: '{E8A3B025-7F4D-4B1A-9C6E-2D8F5A1B3C4D}', ctx: 'user', dir: '', setupExe: 'YourSimulatedSetup.exe', appExe: 'YourSimulatedApp.exe', sizePct: 22 },
+      eula: 'This is a test application provided for the purpose of testing software repackaging, application virtualization, and deployment solutions.',
+      pages: [
+        { key:'welcome', label:'Welcome', on:true }, { key:'eula', label:'EULA', on:true },
+        { key:'ctx', label:'Install context', on:true }, { key:'dir', label:'Target directory', on:true },
+        { key:'comp', label:'Components', on:true }, { key:'shortcut', label:'Desktop shortcut', on:true, def:true },
+        { key:'pin', label:'Start Menu pin', on:true, def:false }, { key:'reboot', label:'Reboot option', on:false, def:false },
+        { key:'asetup', label:'Active Setup', on:false, def:false }
+      ],
+      acts: [
+        { key:'files', label:'Files', on:true },
+        { key:'registry', label:'Registry entries', on:true },
+        { key:'shortcuts', label:'Shortcuts', detail:'Desktop + Start Menu folder', on:true },
+        { key:'assoc', label:'File associations', on:false },
+        { key:'ctxmenu', label:'Context menu', on:false },
+        { key:'envvars', label:'Environment variables', on:false },
+        { key:'service', label:'Windows service', detail:'TestPackageSvc, manual start', on:false },
+        { key:'task', label:'Scheduled task', detail:'Maintenance, daily', on:false },
+        { key:'firewall', label:'Firewall rules', on:false },
+        { key:'protocol', label:'URL protocol', on:false },
+        { key:'asetup', label:'Active Setup', detail:'Per-user run-once', on:false },
+        { key:'apppaths', label:'App Paths', detail:'Run-dialog registration', on:true },
+        { key:'startup', label:'Startup entry', detail:'Registry Run key', on:false },
+        { key:'fonts', label:'Font', detail:'1 test font', on:false },
+        { key:'com', label:'COM registration', detail:'1 class', on:false }
+      ],
+      items: {
+        files: [
+          {path:'%InstallDir%\\testfile.txt', desc:'Marker file'},
+          {path:'%InstallDir%\\data\\config.dat', desc:'Configuration data'},
+          {path:'%ProgramData%\\shared.dat', desc:'Shared data file'}
+        ],
+        registry: [
+          {path:'HKCU\\Software\\YourPublisher\\App', name:'InstallDate', type:'REG_SZ', data:'%DATE%'},
+          {path:'HKCU\\Software\\YourPublisher\\App', name:'Version', type:'REG_SZ', data:'2.5.1'},
+          {path:'HKLM\\Software\\YourPublisher\\App', name:'InstallPath', type:'REG_SZ', data:'%InstallDir%'}
+        ],
+        envvars: [{name:'TESTPKG_HOME', value:'%InstallDir%'},{name:'PATH (append)', value:'%InstallDir%\\bin'}],
+        assoc: [{ext:'.tpkg', progid:'TestPackage.Document', desc:'TestPackage Document', icon:'%InstallDir%\\app.exe,0'},{ext:'.tpkx', progid:'TestPackage.Archive', desc:'TestPackage Archive', icon:'%InstallDir%\\app.exe'}],
+        firewall: [{name:'Inbound rule', dir:'In', action:'Allow', proto:'TCP', port:'19876'},{name:'Outbound rule', dir:'Out', action:'Allow', proto:'TCP', port:'19877'}],
+        protocol: [{scheme:'testpkg', desc:'Protocol handler'}],
+        ctxmenu: [{label:'Open with fake app', target:'All files (*)'}]
+      },
+      un: [
+        { key:'arp', label:'Add/Remove Programs entry', desc:'Fake app shows in Installed Apps', tag:'standard', on:true },
+        { key:'cleanFiles', label:'Clean files', desc:'Remove everything written to disk', tag:'clean', on:true },
+        { key:'cleanReg', label:'Clean registry', desc:'Delete all written values', tag:'clean', on:true },
+        { key:'cleanShortcuts', label:'Clean shortcuts', desc:'Remove both shortcuts', tag:'clean', on:true },
+        { key:'leaveFiles', label:'Leave files behind', desc:'For orphan-detection testing', tag:'test trap', on:false },
+        { key:'leaveReg', label:'Leave registry behind', desc:'Orphaned HKCU key stays', tag:'test trap', on:false }
+      ]
+    };
+  }
+  sw(on) {
+    const base = 'width:38px;height:20px;flex:none;cursor:pointer;border:1px solid var(--color-text);display:flex;align-items:center;padding:2px;box-sizing:border-box;';
+    return {
+      swStyle: base + (on ? 'background:var(--color-accent);justify-content:flex-end;' : 'background:var(--color-bg);justify-content:flex-start;'),
+      knobStyle: 'width:14px;height:14px;background:' + (on ? 'var(--color-bg)' : 'var(--color-text)') + ';'
+    };
+  }
+  chip(label, on, toggle) {
+    return { label, toggle: e => { e.stopPropagation(); toggle(); },
+      style: 'font-size:11px;padding:3px 8px;cursor:pointer;border:1px solid ' +
+        (on ? 'var(--color-text);background:var(--color-text);color:var(--color-bg);font-weight:600;' : 'var(--color-divider);color:var(--color-text);opacity:0.55;') };
+  }
+  actDetail(a) {
+    const it = this.state.items;
+    const map = {
+      files: it.files.length + ' files → %InstallDir%, %ProgramData%',
+      registry: it.registry.length + ' values → ' + it.registry.filter(r => r.path.startsWith('HKCU')).length + ' HKCU, ' + it.registry.filter(r => r.path.startsWith('HKLM')).length + ' HKLM',
+      assoc: it.assoc.map(x => x.ext).join(', '),
+      ctxmenu: it.ctxmenu.length + ' entry — ' + (it.ctxmenu[0] ? it.ctxmenu[0].label : ''),
+      envvars: it.envvars.map(x => x.name).join(', '),
+      firewall: it.firewall.map(x => x.proto + ' ' + x.port + ' ' + x.dir.toLowerCase()).join(', '),
+      protocol: it.protocol.map(x => x.scheme + '://').join(', ')
+    };
+    return map[a.key] || a.detail || '';
+  }
+  sizeLabel() { const mb = Math.round(Math.pow(this.state.id.sizePct / 100, 3) * 102400); return mb >= 1024 ? (mb / 1024).toFixed(1) + ' GB' : mb + ' MB'; }
+  derivedDir() {
+    const s = this.state.id;
+    if (s.dir) return s.dir;
+    return (s.ctx === 'machine' ? 'C:\\Program Files' : '%LocalAppData%\\Programs') + '\\' + s.publisher + '\\' + s.name;
+  }
+  togglePage(key) { this.setState(s => ({ pages: s.pages.map(p => p.key === key ? { ...p, on: !p.on } : p) })); }
+  toggleAct(key) { this.setState(s => ({ acts: s.acts.map(a => a.key === key ? { ...a, on: !a.on } : a) })); }
+  toggleUn(key) { this.setState(s => ({ un: s.un.map(u => u.key === key ? { ...u, on: !u.on } : u) })); }
+  renderVals() {
+    const S = this.state, id = S.id;
+    const pagesOn = S.pages.filter(p => p.on), actsOn = S.acts.filter(a => a.on);
+    const leftovers = S.un.filter(u => u.tag === 'test trap' && u.on).length;
+    const stageDefs = [
+      { num: '01', title: 'Identity', sub: 'Who the fake app claims to be',
+        chips: [this.chip(id.name, true, () => {}), this.chip('v' + id.version, true, () => {}), this.chip(id.ctx === 'user' ? 'per-user' : 'per-machine', true, () => this.setState(s => ({ id: { ...s.id, ctx: s.id.ctx === 'user' ? 'machine' : 'user' } })))],
+        summary: id.publisher + ' · ' + this.sizeLabel(),
+        desc: 'The name, publisher and context your generated installer pretends to have. Everything derived (paths, folders) follows these live.' },
+      { num: '02', title: 'Wizard', sub: 'Pages the tester clicks through',
+        chips: S.pages.map(p => this.chip(p.label, p.on, () => this.togglePage(p.key))),
+        summary: pagesOn.length + ' pages shown',
+        desc: 'Which pages the simulated setup wizard shows, in order — plus their pre-checked defaults, the EULA text and the wizard\u2019s look.' },
+      { num: '03', title: 'Install actions', sub: 'What it does to Windows',
+        chips: S.acts.map(a => this.chip(a.label, a.on, () => this.toggleAct(a.key))),
+        summary: actsOn.length + ' of 15 behaviors on',
+        desc: 'The real install-time footprint — each behavior writes genuine files, keys, services or rules for your pipeline to capture. Open one to edit its sample data.' },
+      { num: '04', title: 'First run', sub: 'After install completes',
+        chips: [this.chip('audit viewer', true, () => {}), this.chip('reboot: ' + S.reboot, S.reboot !== 'none', () => {})],
+        summary: id.appExe,
+        desc: 'The installed fake app is a real EXE: an audit viewer showing everything the installer just did.' },
+      { num: '05', title: 'Uninstall', sub: 'How cleanly it leaves',
+        chips: S.un.map(u => this.chip(u.label, u.on, () => this.toggleUn(u.key))),
+        summary: leftovers ? leftovers + ' intentional leftovers' : 'Clean removal',
+        desc: 'Standard cleanup, or intentional leftovers to test orphan detection in your tooling.' }
+    ];
+    const stages = stageDefs.map((d, i) => ({
+      ...d, pick: () => this.setState({ sel: i }),
+      editLabel: S.sel === i ? 'Editing below ↓' : 'Click to edit ↓',
+      editStyle: 'margin-top:6px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;' + (S.sel === i ? 'color:var(--color-accent);' : 'opacity:0.45;'),
+      numStyle: 'font-family:var(--font-heading);font-weight:800;font-size:13px;' + (S.sel === i ? 'color:var(--color-bg);background:var(--color-accent);padding:1px 6px;' : 'color:var(--color-accent);'),
+      style: 'display:flex;flex-direction:column;padding:var(--space-3) var(--space-4);cursor:pointer;min-height:190px;border-right:1px solid var(--color-divider);' +
+        (S.sel === i ? 'background:var(--color-bg);box-shadow:inset 0 -4px 0 var(--color-accent);' : 'background:var(--color-surface);')
+    }));
+    const sel = stageDefs[S.sel];
+    const wizRows = S.pages.map(p => {
+      const n = pagesOn.indexOf(p) + 1;
+      return { label: p.label, num: p.on ? String(n).padStart(2, '0') : '—', note: p.on ? '' : 'hidden',
+        hasDefault: p.on && p.def !== undefined, defOn: !!p.def,
+        toggleDefault: () => this.setState(s => ({ pages: s.pages.map(q => q.key === p.key ? { ...q, def: !q.def } : q) })),
+        rowStyle: 'display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--color-divider);' + (p.on ? '' : 'opacity:0.45;'),
+        toggle: () => this.togglePage(p.key), ...this.sw(p.on) };
+    });
+    const actRows = S.acts.map(a => ({ label: a.label, detail: this.actDetail(a),
+      editable: !!this.fieldDefs[a.key] && a.on,
+      open: () => this.setState({ listKey: a.key, detailIdx: 0 }),
+      rowStyle: 'display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--color-divider);' + (a.on ? '' : 'opacity:0.5;'),
+      toggle: () => this.toggleAct(a.key), ...this.sw(a.on) }));
+    const unRows = S.un.map(u => ({ label: u.label, desc: u.desc, tagText: u.tag,
+      tagStyle: 'font-size:10px;letter-spacing:0.06em;text-transform:uppercase;padding:2px 8px;' +
+        (u.tag === 'test trap' ? 'background:var(--color-accent-100);color:var(--color-accent-800);font-weight:600;' : 'background:var(--color-surface);opacity:0.6;'),
+      toggle: () => this.toggleUn(u.key), ...this.sw(u.on) }));
+    const onAct = k => S.acts.find(a => a.key === k).on;
+    const it = S.items;
+    const receipt = [
+      { label: 'Wizard pages', value: pagesOn.length + '' },
+      { label: 'Files written', value: onAct('files') ? it.files.length + '' : '0' },
+      { label: 'Registry values', value: onAct('registry') ? it.registry.length + '' : '0' },
+      { label: 'Shortcuts', value: onAct('shortcuts') ? '2' : '0' },
+      { label: 'Services / tasks', value: (onAct('service') ? 1 : 0) + (onAct('task') ? 1 : 0) + '' },
+      { label: 'Firewall rules', value: onAct('firewall') ? it.firewall.length + '' : '0' },
+      { label: 'File types / protocols', value: (onAct('assoc') ? it.assoc.length : 0) + (onAct('protocol') ? it.protocol.length : 0) + '' },
+      { label: 'Env variables', value: onAct('envvars') ? it.envvars.length + '' : '0' },
+      { label: 'Other registrations', value: ['ctxmenu','asetup','apppaths','startup','fonts','com'].filter(onAct).length + '' },
+      { label: 'Reboot', value: S.reboot },
+      { label: 'ARP entry', value: S.un.find(u => u.key === 'arp').on ? 'yes' : 'no' },
+      { label: 'Intentional leftovers', value: leftovers + '' }
+    ].map(r => ({ ...r, style: r.label === 'Intentional leftovers' && leftovers ? 'color:var(--color-accent-800);font-weight:600;' : 'opacity:0.75;' }));
+    const applyPreset = keys => this.setState(s => ({ acts: s.acts.map(a => ({ ...a, on: keys.includes(a.key) })) }));
+    const presets = [
+      { label: 'Blank', keys: [] },
+      { label: 'Typical desktop app', keys: ['files','registry','shortcuts','assoc','apppaths'] },
+      { label: 'Service + firewall', keys: ['files','registry','shortcuts','service','firewall'] },
+      { label: 'Enterprise', keys: ['files','registry','shortcuts','service','task','asetup','apppaths','envvars'] }
+    ].map(p => ({ label: p.label, apply: () => applyPreset(p.keys),
+      style: 'font-family:var(--font-heading);font-weight:600;font-size:12px;cursor:pointer;padding:5px 10px;background:var(--color-surface);border:1px solid var(--color-divider);color:var(--color-text);' }));
+    const lk = S.listKey, defs = lk ? this.fieldDefs[lk] : [];
+    const rows = lk ? it[lk] : [];
+    const listRows = rows.map((r, i) => ({
+      primary: r[defs[0].k], secondary: defs.slice(1).map(d => r[d.k]).join(' · '),
+      style: 'padding:10px var(--space-4);border-bottom:1px solid var(--color-divider);cursor:pointer;' + (i === S.detailIdx ? 'background:var(--color-accent-100);border-left:3px solid var(--color-accent);' : 'border-left:3px solid transparent;'),
+      pick: () => this.setState({ detailIdx: i })
+    }));
+    const cur = rows[S.detailIdx] || {};
+    const detailFields = defs.map(d => ({ key: d.k, label: d.l, value: cur[d.k] || '' }));
+    const actLabels = Object.fromEntries(S.acts.map(a => [a.key, a.label]));
+    return {
+      appName: id.name, appVersion: id.version, publisher: id.publisher, url: id.url, guid: id.guid,
+      setupExe: id.setupExe, appExe: id.appExe, eula: S.eula,
+      sizePct: id.sizePct, sizeLabel: this.sizeLabel(), elevLabel: id.ctx === 'machine' ? 'UAC prompt' : 'None (per-user)',
+      installDir: this.derivedDir(),
+      ctxUser: id.ctx === 'user', ctxMachine: id.ctx === 'machine',
+      setCtxUser: () => this.setState(s => ({ id: { ...s.id, ctx: 'user' } })),
+      setCtxMachine: () => this.setState(s => ({ id: { ...s.id, ctx: 'machine' } })),
+      rbNone: S.reboot === 'none', rbPrompt: S.reboot === 'prompt', rbForce: S.reboot === 'force',
+      setRbNone: () => this.setState({ reboot: 'none' }),
+      setRbPrompt: () => this.setState({ reboot: 'prompt' }),
+      setRbForce: () => this.setState({ reboot: 'force' }),
+      onIdField: e => { const f = e.target.dataset.f, v = e.target.value; this.setState(s => ({ id: { ...s.id, [f]: v } })); },
+      onSize: e => { const v = +e.target.value; this.setState(s => ({ id: { ...s.id, sizePct: v } })); },
+      onEula: e => this.setState({ eula: e.target.value }),
+      newGuid: () => { const h = () => Math.random().toString(16).slice(2, 6).toUpperCase(); this.setState(s => ({ id: { ...s.id, guid: '{' + h() + h() + '-' + h() + '-' + h() + '-' + h() + '-' + h() + h() + h() + '}' } })); },
+      stages, presets, wizRows, actRows, unRows, receipt,
+      selNum: sel.num, selTitle: sel.title, selDesc: sel.desc,
+      isIdentity: S.sel === 0, isWizard: S.sel === 1, isActions: S.sel === 2, isFirstRun: S.sel === 3, isUninstall: S.sel === 4,
+      pagesOnCount: pagesOn.length, actsOnCount: actsOn.length,
+      listOpen: !!lk, listTitle: lk ? actLabels[lk] : '', listRows, detailFields, detailNum: S.detailIdx + 1,
+      closeList: () => this.setState({ listKey: null }),
+      eatClick: e => e.stopPropagation(),
+      addRow: () => this.setState(s => { const blank = Object.fromEntries(this.fieldDefs[lk].map(d => [d.k, ''])); const arr = [...s.items[lk], blank]; return { items: { ...s.items, [lk]: arr }, detailIdx: arr.length - 1 }; }),
+      removeRow: () => this.setState(s => { const arr = s.items[lk].filter((_, i) => i !== s.detailIdx); return { items: { ...s.items, [lk]: arr }, detailIdx: Math.max(0, s.detailIdx - 1) }; }),
+      onItemField: e => { const f = e.target.dataset.f, v = e.target.value; this.setState(s => { const arr = s.items[lk].map((r, i) => i === s.detailIdx ? { ...r, [f]: v } : r); return { items: { ...s.items, [lk]: arr } }; }); },
+      showReceipt: this.props.showReceipt ?? true,
+      genOpen: S.genOpen, openGen: () => this.setState({ genOpen: true }), closeGen: () => this.setState({ genOpen: false })
+    };
+  }
+}
+</script>
+</body>
+</html>
