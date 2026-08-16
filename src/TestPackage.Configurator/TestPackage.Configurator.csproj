@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>TestPackageConfigurator</AssemblyName>
     <RootNamespace>TestPackage.Configurator</RootNamespace>
-    <Version>3.0.0-alpha.1</Version>
+    <Version>3.0.0-alpha.2</Version>
     <Company>RWK Systems</Company>
     <Product>TestPackage</Product>
     <Description>A configurable installation simulator for testing repackaging and deployment solutions</Description>

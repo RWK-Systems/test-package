@@ -12,7 +12,8 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>  <!-- Header -->
             <RowDefinition Height="Auto"/>  <!-- Preset strip -->
-            <RowDefinition Height="Auto"/>  <!-- Identity strip -->
+            <RowDefinition Height="Auto"/>  <!-- Persona strip -->
+            <RowDefinition Height="Auto"/>  <!-- Frame nav tiles -->
             <RowDefinition Height="*"/>     <!-- Frames + Receipt -->
             <RowDefinition Height="Auto"/>  <!-- Footer -->
         </Grid.RowDefinitions>
@@ -50,28 +51,81 @@
             </StackPanel>
         </Border>
 
-        <!-- ================= Identity strip ================= -->
+        <!-- ================= Persona strip ================= -->
+        <!-- The installer is a real installer — a test one, whose payload does
+             nothing of consequence. The user configures the installer's
+             behaviors + registered identity, not "an app." -->
         <Border Grid.Row="2" Background="{StaticResource BgBrush}" BorderBrush="{StaticResource InkBrush}" BorderThickness="0,0,0,2">
             <Grid Margin="24,14">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Style="{StaticResource BrandKicker}" Text="YOU ARE DESIGNING A FAKE APP" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="0" Style="{StaticResource BrandKicker}" Text="YOU ARE BUILDING AN INSTALLER" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap">
-                    <Run Text="Everything below configures the "/>
-                    <Run FontWeight="Bold" Text="generated installer"/>
-                    <Run Text=" — not TestPackage itself. The installer will run "/>
+                    <Run Text="Everything below configures the installer TestPackage will produce — not TestPackage itself. Generate builds "/>
                     <Run x:Name="RunInstallerExeName" FontFamily="{StaticResource MonoFont}" Text="YourSimulatedSetup.exe"/>
-                    <Run Text=", install "/>
+                    <Run Text=". Running that installer registers "/>
                     <Run x:Name="RunPersonaAppName" FontWeight="Bold" Text="My Test Package"/>
-                    <Run Text=", and drop an audit viewer that shows everything it did."/>
+                    <Run Text=" in Add/Remove Programs, performs the install actions below, and drops an audit viewer that reports everything it did."/>
                 </TextBlock>
             </Grid>
         </Border>
 
+        <!-- ================= Frame navigation tiles ================= -->
+        <!-- Six section tiles across the top of the workspace; clicking one
+             scrolls the left column to that frame's card. -->
+        <Border Grid.Row="3" Background="{StaticResource BgBrush}" BorderBrush="{StaticResource InkBrush}" BorderThickness="0,0,0,2">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Padding="24,10">
+                <StackPanel Orientation="Horizontal">
+                    <Button Style="{StaticResource FrameTile}" Tag="Identity"       Click="FrameTile_Click">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource FrameTileEyebrow}" Text="01"/>
+                            <TextBlock Style="{StaticResource FrameTileTitle}" Text="Identity"/>
+                            <TextBlock x:Name="LblTileIdentity" Style="{StaticResource FrameTileMeta}" Text="—"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource FrameTile}" Tag="Wizard"         Click="FrameTile_Click">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource FrameTileEyebrow}" Text="02"/>
+                            <TextBlock Style="{StaticResource FrameTileTitle}" Text="Wizard"/>
+                            <TextBlock x:Name="LblTileWizard" Style="{StaticResource FrameTileMeta}" Text="—"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource FrameTile}" Tag="InstallActions" Click="FrameTile_Click">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource FrameTileEyebrow}" Text="03"/>
+                            <TextBlock Style="{StaticResource FrameTileTitle}" Text="Install actions"/>
+                            <TextBlock x:Name="LblTileInstallActions" Style="{StaticResource FrameTileMeta}" Text="—"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource FrameTile}" Tag="Uninstall"      Click="FrameTile_Click">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource FrameTileEyebrow}" Text="04"/>
+                            <TextBlock Style="{StaticResource FrameTileTitle}" Text="Uninstall"/>
+                            <TextBlock x:Name="LblTileUninstall" Style="{StaticResource FrameTileMeta}" Text="—"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource FrameTile}" Tag="Appearance"     Click="FrameTile_Click">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource FrameTileEyebrow}" Text="05"/>
+                            <TextBlock Style="{StaticResource FrameTileTitle}" Text="Appearance"/>
+                            <TextBlock x:Name="LblTileAppearance" Style="{StaticResource FrameTileMeta}" Text="—"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource FrameTile}" Tag="Package"        Click="FrameTile_Click">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource FrameTileEyebrow}" Text="06"/>
+                            <TextBlock Style="{StaticResource FrameTileTitle}" Text="Package"/>
+                            <TextBlock x:Name="LblTilePackage" Style="{StaticResource FrameTileMeta}" Text="—"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
         <!-- ================= Frames + Receipt ================= -->
-        <Grid Grid.Row="3">
+        <Grid Grid.Row="4">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="372"/>
@@ -82,13 +136,13 @@
                 <StackPanel>
 
                     <!-- ===== Frame 01 — Identity ===== -->
-                    <Border Style="{StaticResource Card}">
+                    <Border x:Name="FrameIdentity" Style="{StaticResource Card}">
                         <StackPanel>
                             <TextBlock Style="{StaticResource FrameEyebrow}" Text="FRAME 01 · IDENTITY"/>
                             <TextBlock Style="{StaticResource FrameHeading}" Text="Identity"/>
-                            <TextBlock Style="{StaticResource FrameKicker}" Text="What your fake app is called and who published it. Names flow through the derived install path and Start Menu folder."/>
+                            <TextBlock Style="{StaticResource FrameKicker}" Text="How the installer registers itself in Windows — the display name shown in Add/Remove Programs and the wizard, the publisher, and where it installs."/>
 
-                            <TextBlock Style="{StaticResource FieldLabel}" Text="APPLICATION NAME"/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="DISPLAY NAME"/>
                             <TextBox x:Name="TxtAppName" Style="{StaticResource FieldTextBox}" TextChanged="DefaultPathSource_TextChanged"/>
 
                             <Grid>
@@ -139,7 +193,7 @@
                     </Border>
 
                     <!-- ===== Frame 02 — Wizard ===== -->
-                    <Border Style="{StaticResource Card}">
+                    <Border x:Name="FrameWizard" Style="{StaticResource Card}">
                         <StackPanel>
                             <TextBlock Style="{StaticResource FrameEyebrow}" Text="FRAME 02 · WIZARD"/>
                             <TextBlock Style="{StaticResource FrameHeading}" Text="Wizard experience"/>
@@ -172,11 +226,11 @@
                     </Border>
 
                     <!-- ===== Frame 03 — Install actions ===== -->
-                    <Border Style="{StaticResource Card}">
+                    <Border x:Name="FrameInstallActions" Style="{StaticResource Card}">
                         <StackPanel>
                             <TextBlock Style="{StaticResource FrameEyebrow}" Text="FRAME 03 · INSTALL ACTIONS"/>
                             <TextBlock Style="{StaticResource FrameHeading}" Text="Install actions"/>
-                            <TextBlock Style="{StaticResource FrameKicker}" Text="What the installer does to Windows. Turn a behavior on to edit its sample data. Composite editors get their proper overlay in alpha.2 — pipe-format rows survive one more phase."/>
+                            <TextBlock Style="{StaticResource FrameKicker}" Text="What the installer does to Windows when it runs. Turn a behavior on to edit its sample data. The composite editors get their proper overlay in alpha.3 — pipe-format rows survive one more phase."/>
 
                             <TextBlock Style="{StaticResource SectionLabel}" Text="INSTALLER SIZE"/>
                             <CheckBox x:Name="ChkInstallerSize" Style="{StaticResource FeatureToggle}" Content="Pad the generated setup .exe to a target size"/>
@@ -295,11 +349,11 @@
                     </Border>
 
                     <!-- ===== Frame 04 — Uninstall ===== -->
-                    <Border Style="{StaticResource Card}">
+                    <Border x:Name="FrameUninstall" Style="{StaticResource Card}">
                         <StackPanel>
                             <TextBlock Style="{StaticResource FrameEyebrow}" Text="FRAME 04 · UNINSTALL"/>
                             <TextBlock Style="{StaticResource FrameHeading}" Text="Uninstall &amp; reboot"/>
-                            <TextBlock Style="{StaticResource FrameKicker}" Text="How cleanly the fake app removes itself — including things left behind on purpose, for testing orphan detection."/>
+                            <TextBlock Style="{StaticResource FrameKicker}" Text="How cleanly the installer removes what it wrote — including things left behind on purpose, for testing orphan detection."/>
 
                             <TextBlock Style="{StaticResource SectionLabel}" Text="UNINSTALL BEHAVIOR"/>
                             <CheckBox x:Name="ChkRegisterUninstaller" Style="{StaticResource FeatureToggle}" Content="Register in Add/Remove Programs"/>
@@ -324,11 +378,11 @@
                     </Border>
 
                     <!-- ===== Frame 05 — Wizard appearance ===== -->
-                    <Border Style="{StaticResource Card}">
+                    <Border x:Name="FrameAppearance" Style="{StaticResource Card}">
                         <StackPanel>
                             <TextBlock Style="{StaticResource FrameEyebrow}" Text="FRAME 05 · WIZARD APPEARANCE"/>
                             <TextBlock Style="{StaticResource FrameHeading}" Text="Wizard appearance"/>
-                            <TextBlock Style="{StaticResource FrameKicker}" Text="Cosmetics of the generated wizard — banner, accent and pacing."/>
+                            <TextBlock Style="{StaticResource FrameKicker}" Text="Cosmetics of the installer's wizard — banner, accent and pacing."/>
 
                             <TextBlock Style="{StaticResource FieldLabel}" Text="BANNER COLOR"/>
                             <StackPanel Orientation="Horizontal">
@@ -357,17 +411,18 @@
                     </Border>
 
                     <!-- ===== Frame 06 — Package & generate ===== -->
-                    <Border Style="{StaticResource Card}">
+                    <Border x:Name="FramePackage" Style="{StaticResource Card}">
                         <StackPanel>
                             <TextBlock Style="{StaticResource FrameEyebrow}" Text="FRAME 06 · PACKAGE &amp; GENERATE"/>
                             <TextBlock Style="{StaticResource FrameHeading}" Text="Package &amp; generate"/>
-                            <TextBlock Style="{StaticResource FrameKicker}" Text="What lands on disk when you press Generate."/>
+                            <TextBlock Style="{StaticResource FrameKicker}" Text="What TestPackage produces when you press Generate."/>
 
                             <TextBlock Style="{StaticResource FieldLabel}" Text="INSTALLER EXE NAME"/>
                             <TextBox x:Name="TxtInstallerExeName" Style="{StaticResource MonoTextBox}"/>
 
-                            <TextBlock Style="{StaticResource FieldLabel}" Text="FAKE APP EXE NAME"/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="INSTALLED EXE NAME"/>
                             <TextBox x:Name="TxtAppExeName" Style="{StaticResource MonoTextBox}"/>
+                            <TextBlock Style="{StaticResource MutedText}" Text="Name of the audit viewer the installer drops on the target machine. Rename to match your test scenario." TextWrapping="Wrap" Margin="0,2,0,0"/>
 
                             <TextBlock Style="{StaticResource FieldLabel}" Text="OUTPUT FOLDER"/>
                             <Grid>
@@ -425,7 +480,7 @@
         </Grid>
 
         <!-- ================= Footer ================= -->
-        <Border Grid.Row="4" Background="{StaticResource BgBrush}" BorderBrush="{StaticResource InkBrush}" BorderThickness="0,2,0,0">
+        <Border Grid.Row="5" Background="{StaticResource BgBrush}" BorderBrush="{StaticResource InkBrush}" BorderThickness="0,2,0,0">
             <Grid Margin="24,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

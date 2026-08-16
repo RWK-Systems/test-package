@@ -891,13 +891,32 @@ namespace TestPackage.Configurator
 
         private void UpdateReceipt()
         {
-            // Identity strip runs — always keep the persona sentence current.
+            // Persona strip runs — always keep the sentence current.
             var installerName = string.IsNullOrWhiteSpace(TxtInstallerExeName.Text)
                 ? "YourSimulatedSetup.exe" : TxtInstallerExeName.Text.Trim();
-            var appName = string.IsNullOrWhiteSpace(TxtAppName.Text)
-                ? "your app" : TxtAppName.Text.Trim();
+            var displayName = string.IsNullOrWhiteSpace(TxtAppName.Text)
+                ? "your installer" : TxtAppName.Text.Trim();
+            var publisher = string.IsNullOrWhiteSpace(TxtAppPublisher.Text) ? "—" : TxtAppPublisher.Text.Trim();
             if (RunInstallerExeName != null) RunInstallerExeName.Text = installerName;
-            if (RunPersonaAppName != null)   RunPersonaAppName.Text   = appName;
+            if (RunPersonaAppName != null)   RunPersonaAppName.Text   = displayName;
+
+            // Frame nav tile meta lines
+            if (LblTileIdentity != null)
+                LblTileIdentity.Text = $"{displayName} · {publisher}";
+            if (LblTileWizard != null)
+            {
+                var pages = 0;
+                if (ChkShowWelcome.IsChecked == true) pages++;
+                if (ChkShowEULA.IsChecked == true) pages++;
+                if (ChkShowInstallContext.IsChecked == true) pages++;
+                if (ChkShowTargetDirectory.IsChecked == true) pages++;
+                if (ChkShowComponents.IsChecked == true) pages++;
+                if (ChkShowDesktopShortcut.IsChecked == true) pages++;
+                if (ChkShowStartMenuPin.IsChecked == true) pages++;
+                if (ChkShowRebootOption.IsChecked == true) pages++;
+                if (ChkShowActiveSetup.IsChecked == true) pages++;
+                LblTileWizard.Text = pages == 1 ? "1 page" : $"{pages} pages";
+            }
 
             // Behaviors enabled — one line each so the rail stays scannable.
             var behaviors = new List<string>();
@@ -917,6 +936,24 @@ namespace TestPackage.Configurator
             if (ChkStartup.IsChecked == true)          behaviors.Add("Startup");
             if (LblReceiptBehaviors != null)
                 LblReceiptBehaviors.Text = behaviors.Count == 0 ? "none" : string.Join("\n", behaviors);
+
+            if (LblTileInstallActions != null)
+                LblTileInstallActions.Text = behaviors.Count == 0 ? "none on" : $"{behaviors.Count} on";
+
+            if (LblTileUninstall != null)
+            {
+                var leftovers = (ChkLeaveFiles.IsChecked == true) || (ChkLeaveRegistry.IsChecked == true);
+                var clean = ChkCleanFiles.IsChecked == true && ChkCleanRegistry.IsChecked == true;
+                LblTileUninstall.Text = leftovers ? "leftovers on"
+                    : (clean ? "clean sweep" : "partial cleanup");
+            }
+
+            if (LblTileAppearance != null)
+                LblTileAppearance.Text = string.IsNullOrWhiteSpace(TxtBannerColor.Text)
+                    ? "default" : TxtBannerColor.Text.Trim();
+
+            if (LblTilePackage != null)
+                LblTilePackage.Text = installerName;
 
             // Installer size
             if (LblReceiptSize != null)
@@ -948,7 +985,24 @@ namespace TestPackage.Configurator
 
             // Bottom-of-rail summary
             if (LblReceiptSummary != null)
-                LblReceiptSummary.Text = $"Generate produces {installerName}. Run it and it installs {appName}, performs the behaviors above, and drops the audit viewer.";
+                LblReceiptSummary.Text = $"Generate builds {installerName}. Running that installer registers {displayName} in Add/Remove Programs, performs the behaviors above, and drops the audit viewer.";
+        }
+
+        // Frame nav tile click — scrolls the frames column to the matching card.
+        private void FrameTile_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button b || b.Tag is not string key) return;
+            FrameworkElement? target = key switch
+            {
+                "Identity"       => FrameIdentity,
+                "Wizard"         => FrameWizard,
+                "InstallActions" => FrameInstallActions,
+                "Uninstall"      => FrameUninstall,
+                "Appearance"     => FrameAppearance,
+                "Package"        => FramePackage,
+                _ => null
+            };
+            target?.BringIntoView();
         }
 
         // ===== Presets =====
