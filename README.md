@@ -63,7 +63,11 @@ winget install RWKSystems.TestPackage
 
 Download **TestPackageSetup.exe** from the [latest GitHub release](https://github.com/RWK-Systems/test-package/releases/latest).
 
-### Option 3: Build from Source
+### Option 3: Microsoft Store
+
+Microsoft Store publishing is being prepared using the signed Win32 installer submission path. See [store/README.md](store/README.md) for the submission process and current status.
+
+### Option 4: Build from Source
 
 Requires [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) and Windows 10/11.
 
@@ -96,8 +100,10 @@ test-package/
 │   └── TestPackageSmokeTest/           # CI smoke test
 ├── installer/
 │   └── test-package-setup.nsi          # NSIS installer for the Configurator
+├── store/                              # Microsoft Store listing and submission metadata
 └── .github/workflows/
     ├── build.yml                       # CI build
+    ├── prepare-store.yml               # Store submission validation and bundle
     ├── release.yml                     # GitHub Releases
     └── submit-winget.yml               # Manual winget submission
 ```

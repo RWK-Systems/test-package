@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "product": {
+    "name": "TestPackage",
+    "publisher": "RWK Systems",
+    "category": "Developer tools",
+    "pricing": "Free",
+    "markets": "All available markets",
+    "visibility": "Public"
+  },
+  "package": {
+    "type": "exe",
+    "installerName": "TestPackageSetup.exe",
+    "installerUrlTemplate": "https://github.com/RWK-Systems/test-package/releases/download/v{version}/TestPackageSetup.exe",
+    "silentInstallCommand": "TestPackageSetup.exe /S",
+    "silentInstallReturnCodes": { "success": [0] },
+    "installScope": "machine",
+    "architectures": ["x64"],
+    "minimumOsVersion": "Windows 10 version 1809"
+  },
+  "support": {
+    "website": "https://www.rwksystems.com/test-package/",
+    "support": "https://github.com/RWK-Systems/test-package/issues",
+    "privacyPolicy": "https://www.rwksystems.com/privacy-policy/"
+  }
+}
