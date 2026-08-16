@@ -230,7 +230,7 @@
                         <StackPanel>
                             <TextBlock Style="{StaticResource FrameEyebrow}" Text="FRAME 03 · INSTALL ACTIONS"/>
                             <TextBlock Style="{StaticResource FrameHeading}" Text="Install actions"/>
-                            <TextBlock Style="{StaticResource FrameKicker}" Text="What the installer does to Windows when it runs. Turn a behavior on to edit its sample data. The composite editors get their proper overlay in alpha.3 — pipe-format rows survive one more phase."/>
+                            <TextBlock Style="{StaticResource FrameKicker}" Text="What the installer does to Windows when it runs. Turn a behavior on, then use Edit data to add or edit its entries."/>
 
                             <TextBlock Style="{StaticResource SectionLabel}" Text="INSTALLER SIZE"/>
                             <CheckBox x:Name="ChkInstallerSize" Style="{StaticResource FeatureToggle}" Content="Pad the generated setup .exe to a target size"/>
@@ -256,15 +256,21 @@
 
                             <CheckBox x:Name="ChkTestFilesEnabled" Style="{StaticResource FeatureToggle}" Content="Test files"/>
                             <TextBlock Style="{StaticResource MutedText}" Text="Marker files the installer writes to verify file-system capture."/>
-                            <StackPanel x:Name="TestFilesList" Margin="0,6,0,0"/>
-                            <Button Content="+ Add test file" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddTestFile_Click"/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblTestFilesSummary" Grid.Column="0" Style="{StaticResource MonoText}" Foreground="{StaticResource InkMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                <Button Grid.Column="1" Content="Edit data →" Style="{StaticResource SecondaryButton}" Tag="TestFiles" Click="OpenComposite_Click"/>
+                            </Grid>
 
                             <Border Style="{StaticResource LightRule}"/>
 
                             <CheckBox x:Name="ChkRegistryEnabled" Style="{StaticResource FeatureToggle}" Content="Registry entries"/>
                             <TextBlock Style="{StaticResource MutedText}" Text="HKCU / HKLM values written during install."/>
-                            <StackPanel x:Name="RegistryEntriesList" Margin="0,6,0,0"/>
-                            <Button Content="+ Add registry entry" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddRegistryEntry_Click"/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblRegistrySummary" Grid.Column="0" Style="{StaticResource MonoText}" Foreground="{StaticResource InkMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                <Button Grid.Column="1" Content="Edit data →" Style="{StaticResource SecondaryButton}" Tag="RegistryEntries" Click="OpenComposite_Click"/>
+                            </Grid>
 
                             <Border Style="{StaticResource LightRule}"/>
 
@@ -281,20 +287,32 @@
                             <Border Style="{StaticResource LightRule}"/>
 
                             <CheckBox x:Name="ChkFileAssociations" Style="{StaticResource FeatureToggle}" Content="File associations"/>
-                            <StackPanel x:Name="FileAssociationsList" Margin="0,6,0,0"/>
-                            <Button Content="+ Add association" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddFileAssociation_Click"/>
+                            <TextBlock Style="{StaticResource MutedText}" Text="Extensions the installer registers as owned by this app."/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblFileAssociationsSummary" Grid.Column="0" Style="{StaticResource MonoText}" Foreground="{StaticResource InkMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                <Button Grid.Column="1" Content="Edit data →" Style="{StaticResource SecondaryButton}" Tag="FileAssociations" Click="OpenComposite_Click"/>
+                            </Grid>
 
                             <Border Style="{StaticResource LightRule}"/>
 
                             <CheckBox x:Name="ChkContextMenu" Style="{StaticResource FeatureToggle}" Content="Shell context menu entries"/>
-                            <StackPanel x:Name="ContextMenuList" Margin="0,6,0,0"/>
-                            <Button Content="+ Add context menu entry" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddContextMenu_Click"/>
+                            <TextBlock Style="{StaticResource MutedText}" Text="Right-click actions the installer registers under file types or folders."/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblContextMenuSummary" Grid.Column="0" Style="{StaticResource MonoText}" Foreground="{StaticResource InkMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                <Button Grid.Column="1" Content="Edit data →" Style="{StaticResource SecondaryButton}" Tag="ContextMenuEntries" Click="OpenComposite_Click"/>
+                            </Grid>
 
                             <Border Style="{StaticResource LightRule}"/>
 
                             <CheckBox x:Name="ChkEnvVars" Style="{StaticResource FeatureToggle}" Content="Environment variables"/>
-                            <StackPanel x:Name="EnvVarsList" Margin="0,6,0,0"/>
-                            <Button Content="+ Add variable" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddEnvVar_Click"/>
+                            <TextBlock Style="{StaticResource MutedText}" Text="User or System environment variables the installer sets."/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblEnvVarsSummary" Grid.Column="0" Style="{StaticResource MonoText}" Foreground="{StaticResource InkMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                <Button Grid.Column="1" Content="Edit data →" Style="{StaticResource SecondaryButton}" Tag="EnvironmentVariables" Click="OpenComposite_Click"/>
+                            </Grid>
 
                             <Border Style="{StaticResource LightRule}"/>
 
@@ -326,14 +344,22 @@
                             <Border Style="{StaticResource LightRule}"/>
 
                             <CheckBox x:Name="ChkFirewall" Style="{StaticResource FeatureToggle}" Content="Firewall rules"/>
-                            <StackPanel x:Name="FirewallRulesList" Margin="0,6,0,0"/>
-                            <Button Content="+ Add firewall rule" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddFirewallRule_Click"/>
+                            <TextBlock Style="{StaticResource MutedText}" Text="Windows Firewall rules the installer adds."/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblFirewallSummary" Grid.Column="0" Style="{StaticResource MonoText}" Foreground="{StaticResource InkMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                <Button Grid.Column="1" Content="Edit data →" Style="{StaticResource SecondaryButton}" Tag="FirewallRules" Click="OpenComposite_Click"/>
+                            </Grid>
 
                             <Border Style="{StaticResource LightRule}"/>
 
                             <CheckBox x:Name="ChkProtocolHandlers" Style="{StaticResource FeatureToggle}" Content="URI protocol handlers"/>
-                            <StackPanel x:Name="ProtocolHandlersList" Margin="0,6,0,0"/>
-                            <Button Content="+ Add protocol" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddProtocolHandler_Click"/>
+                            <TextBlock Style="{StaticResource MutedText}" Text="Custom URI schemes (e.g. myapp://) the installer registers."/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblProtocolHandlersSummary" Grid.Column="0" Style="{StaticResource MonoText}" Foreground="{StaticResource InkMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                <Button Grid.Column="1" Content="Edit data →" Style="{StaticResource SecondaryButton}" Tag="ProtocolHandlers" Click="OpenComposite_Click"/>
+                            </Grid>
 
                             <Border Style="{StaticResource LightRule}"/>
 
@@ -493,5 +519,72 @@
                 <Button Grid.Column="1" Content="Generate installer" Style="{StaticResource PrimaryButton}" Click="GenerateInstaller_Click"/>
             </Grid>
         </Border>
+
+        <!-- ================= Composite editor overlay ================= -->
+        <!-- Master list + detail form, right-anchored. Opened by Edit data on
+             any of the seven composite behaviors in Frame 03. -->
+        <Grid x:Name="CompositeOverlay" Grid.RowSpan="6" Visibility="Collapsed" Panel.ZIndex="100">
+            <Rectangle Fill="#59201E1D" MouseLeftButtonDown="CompositeOverlay_ScrimClick"/>
+            <Border Width="860" HorizontalAlignment="Right"
+                    Background="{StaticResource BgBrush}"
+                    BorderBrush="{StaticResource InkBrush}" BorderThickness="2,0,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Overlay header -->
+                    <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource InkBrush}" BorderThickness="0,0,0,2">
+                        <Grid Margin="24,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Style="{StaticResource BrandKicker}" Text="EDITING DATA"/>
+                                <TextBlock x:Name="LblOverlayTitle" Style="{StaticResource FrameHeading}" Text="—" Margin="0,4,0,0"/>
+                                <TextBlock x:Name="LblOverlaySubtitle" Style="{StaticResource MutedText}" Text="" Margin="0,4,0,0" TextWrapping="Wrap" MaxWidth="720" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="Close ✕" Style="{StaticResource SecondaryButton}" VerticalAlignment="Top" Click="CompositeOverlay_Close"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Overlay body: master list + detail form -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="340"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Master list -->
+                        <Grid Grid.Column="0" Background="{StaticResource SurfaceBrush}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                                <StackPanel x:Name="OverlayMasterList" Margin="0,4,0,4"/>
+                            </ScrollViewer>
+                            <Border Grid.Row="1" BorderBrush="{StaticResource InkBrush}" BorderThickness="0,2,0,0" Padding="16,12">
+                                <Button Content="+ Add entry" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Click="CompositeOverlay_Add"/>
+                            </Border>
+                        </Grid>
+
+                        <!-- Detail form -->
+                        <Border Grid.Column="1" Background="White" BorderBrush="{StaticResource InkBrush}" BorderThickness="2,0,0,0">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource BrandKicker}" Text="ENTRY DETAILS"/>
+                                    <StackPanel x:Name="OverlayDetailForm" Margin="0,8,0,0"/>
+                                    <Border Style="{StaticResource LightRule}" Margin="0,16,0,12"/>
+                                    <Button x:Name="BtnOverlayRemove" Content="Remove entry" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Foreground="{StaticResource AccentDeepBrush}" Click="CompositeOverlay_Remove"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

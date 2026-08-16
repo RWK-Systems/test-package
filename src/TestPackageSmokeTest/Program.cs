@@ -236,6 +236,110 @@ namespace TestPackageSmokeTest
             }
             Console.WriteLine();
 
+            // --- Config Round-Trip Test ---
+            // Proves ConfigModel <-> ConfigWriter <-> ConfigParser is lossless.
+            // A regression here would silently corrupt configs loaded/saved by
+            // the Configurator, so it is worth catching in CI.
+            Console.WriteLine(separator);
+            Console.WriteLine("[Round-Trip Test] ConfigModel <-> INI");
+            Console.WriteLine(separator);
+            try
+            {
+                var m1 = ConfigModel.FromParser(ConfigParser.Load(configPath));
+                var tmpIni = Path.Combine(Path.GetTempPath(), "TestPackage_RT_" + Guid.NewGuid().ToString("N")[..8] + ".ini");
+                File.WriteAllText(tmpIni, ConfigWriter.Write(m1));
+                var m2 = ConfigModel.FromParser(ConfigParser.Load(tmpIni));
+                try { File.Delete(tmpIni); } catch { }
+
+                var mismatches = new List<string>();
+                void Check(string label, object? a, object? b)
+                {
+                    var sa = a?.ToString() ?? "";
+                    var sb = b?.ToString() ?? "";
+                    if (!string.Equals(sa, sb, StringComparison.Ordinal))
+                        mismatches.Add($"    {label}: '{sa}' != '{sb}'");
+                }
+                Check("AppName",                 m1.AppName,                 m2.AppName);
+                Check("AppVersion",              m1.AppVersion,              m2.AppVersion);
+                Check("AppPublisher",            m1.AppPublisher,            m2.AppPublisher);
+                Check("AppURL",                  m1.AppURL,                  m2.AppURL);
+                Check("AppGUID",                 m1.AppGUID,                 m2.AppGUID);
+                Check("RequireAdmin",            m1.RequireAdmin,            m2.RequireAdmin);
+                Check("DefaultContext",          m1.DefaultContext,          m2.DefaultContext);
+                Check("DefaultPath",             m1.DefaultPath,             m2.DefaultPath);
+                Check("StartMenuFolder",         m1.StartMenuFolder,         m2.StartMenuFolder);
+                Check("TestFiles",               m1.TestFiles,               m2.TestFiles);
+                Check("RegistryEntries",         m1.RegistryEntries,         m2.RegistryEntries);
+                Check("FileAssociations",        m1.FileAssociations,        m2.FileAssociations);
+                Check("ContextMenuEntries",      m1.ContextMenuEntries,      m2.ContextMenuEntries);
+                Check("EnvironmentVariables",    m1.EnvironmentVariables,    m2.EnvironmentVariables);
+                Check("FirewallRules",           m1.FirewallRules,           m2.FirewallRules);
+                Check("ProtocolHandlers",        m1.ProtocolHandlers,        m2.ProtocolHandlers);
+                Check("InstallerSizeEnabled",   m1.InstallerSizeEnabled,   m2.InstallerSizeEnabled);
+                Check("InstallerSizeMB",         m1.InstallerSizeMB,         m2.InstallerSizeMB);
+                Check("Components.Count",        m1.Components.Count,        m2.Components.Count);
+                for (int i = 0; i < Math.Min(m1.Components.Count, m2.Components.Count); i++)
+                {
+                    Check($"Components[{i}].Name",           m1.Components[i].Name,           m2.Components[i].Name);
+                    Check($"Components[{i}].DefaultSelected", m1.Components[i].DefaultSelected, m2.Components[i].DefaultSelected);
+                }
+
+                if (mismatches.Count == 0)
+                {
+                    Console.WriteLine("  All checked properties round-trip identically.");
+                    Console.WriteLine("  >>> ROUND-TRIP PASSED <<<");
+                }
+                else
+                {
+                    Console.WriteLine("  >>> ROUND-TRIP FAILED — mismatches:");
+                    foreach (var mm in mismatches) Console.WriteLine(mm);
+                    return 1;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  >>> ROUND-TRIP FAILED: {ex.Message} <<<");
+                return 1;
+            }
+            Console.WriteLine();
+
+            // --- Composite Pipe Parse Test ---
+            // Exercises the pipe/comma parser rules that all seven composite
+            // fields share, especially the "value contains a comma" case that
+            // makes File Associations tricky (icon "app.exe,0").
+            Console.WriteLine(separator);
+            Console.WriteLine("[Composite Parse Test] pipe / comma boundary handling");
+            Console.WriteLine(separator);
+            try
+            {
+                // Reuse ConfigModel to check that a config with icon-index entries
+                // parses and re-serializes losslessly.
+                var m = new ConfigModel
+                {
+                    FileAssociationsEnabled = true,
+                    FileAssociations = @".tpkg|TestPackage.Document|TestPackage Document|%InstallDir%\App.exe,0,.tpkx|TestPackage.Archive|TestPackage Archive|%InstallDir%\App.exe,1"
+                };
+                var tmp = Path.Combine(Path.GetTempPath(), "TestPackage_Composite_" + Guid.NewGuid().ToString("N")[..8] + ".ini");
+                File.WriteAllText(tmp, ConfigWriter.Write(m));
+                var m2 = ConfigModel.FromParser(ConfigParser.Load(tmp));
+                try { File.Delete(tmp); } catch { }
+                if (!string.Equals(m.FileAssociations, m2.FileAssociations, StringComparison.Ordinal))
+                {
+                    Console.WriteLine($"  >>> COMPOSITE PARSE FAILED:");
+                    Console.WriteLine($"      before: {m.FileAssociations}");
+                    Console.WriteLine($"      after:  {m2.FileAssociations}");
+                    return 1;
+                }
+                Console.WriteLine("  File association with icon-index round-trips cleanly.");
+                Console.WriteLine("  >>> COMPOSITE PARSE PASSED <<<");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  >>> COMPOSITE PARSE FAILED: {ex.Message} <<<");
+                return 1;
+            }
+            Console.WriteLine();
+
             Console.WriteLine(separator);
             Console.WriteLine("  SMOKE TEST PASSED");
             Console.WriteLine($"  TestPackage by RWK Systems - https://rwksystems.com");
