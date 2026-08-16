@@ -12,6 +12,13 @@
     <Product>TestPackage</Product>
     <Description>TestPackage - Installation test application by RWK Systems</Description>
     <ApplicationIcon>..\..\assets\icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <!-- Single-file bundle + compression only apply to self-contained publishes.
+       .NET 10 SDK errors NETSDK1176 otherwise; the previous unconditional
+       properties silently failed the framework-dependent publish. Matches the
+       existing pattern in TestPackageInstaller.csproj. -->
+  <PropertyGroup Condition="'$(SelfContained)' == 'true'">
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
