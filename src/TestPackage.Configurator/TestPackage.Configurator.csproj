@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>TestPackageConfigurator</AssemblyName>
     <RootNamespace>TestPackage.Configurator</RootNamespace>
-    <Version>2.5.1</Version>
+    <Version>3.0.0-alpha.1</Version>
     <Company>RWK Systems</Company>
     <Product>TestPackage</Product>
     <Description>A configurable installation simulator for testing repackaging and deployment solutions</Description>
@@ -23,6 +23,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TestPackage.Core\TestPackage.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Presets are shipped as embedded resources; loaded by name at runtime. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Presets\*.ini">
+      <LogicalName>TestPackage.Configurator.Presets.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

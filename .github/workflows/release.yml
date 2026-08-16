@@ -106,13 +106,16 @@ jobs:
 
           Design and generate simulated installers for testing repackaging, application virtualization, and deployment solutions.
 
-          ### What's New in v2.5
+          ### v3 in progress
 
-          - **Configurable installer size** — Set the generated setup EXE to any size up to 100 GB (non-linear slider + exact MB entry) to test how repackaging and virtualization tools handle large installers
-          - **Disk-space prerequisite check** — The generated installer verifies free space on the target drive before installing
-          - **Configurator GUI** — Design your test scenarios visually
-          - **Generate Installer** — One click to create a simulated setup EXE
-          - All installer behaviors configurable via the Configurator UI
+          Pre-release builds (`vX.Y.Z-alpha.N`) are UX-revamp iterations of the Configurator. They install alongside the stable v2.5 line by upgrading the same registered product; use the stable release (marked "Latest") for regular workflows. Highlights across v3 so far:
+
+          - **Single-screen Configurator** — the 7-tab layout is gone; identity, wizard, install actions, uninstall, appearance and package settings all live on one canvas, with a live "receipt" rail showing the footprint your generated installer will leave.
+          - **Presets** — start from Blank, Typical desktop app, Service + firewall, or Enterprise; presets replace install-action behaviors + sample data while leaving your identity/wizard/uninstall settings alone.
+          - **Modernist visual system** — flat, architectural, single accent, 2px rules, zero corner radius.
+          - Carried forward from v2.5.1: configurable installer size (non-linear slider + MB), disk-space check, derived install path & Start Menu folder, silent install with command-line overrides.
+
+          The composite-field editor overlay (registry / env vars / firewall / etc.) and full visual polish arrive in later alpha builds.
 
           ### Download
 
@@ -123,6 +126,8 @@ jobs:
           ```
           winget install RWKSystems.TestPackage
           ```
+
+          winget tracks the stable release; use the download link above for pre-release alpha builds.
 
           ### SHA256
           ```

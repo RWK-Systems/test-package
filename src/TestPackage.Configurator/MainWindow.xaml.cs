@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Navigation;
+using System.Windows.Threading;
 using TestPackage.Core;
 
 namespace TestPackage.Configurator
@@ -21,6 +23,7 @@ namespace TestPackage.Configurator
             ClampToScreen();
             TxtOutputFolder.Text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             PopulateFromModel(_model);
+            StartReceiptTimer();
         }
 
         private void ClampToScreen()
@@ -862,6 +865,330 @@ namespace TestPackage.Configurator
             SldInstallerSize.Value = MBToSliderPos(mb);
             UpdateInstallerSizeReadout(mb);
             _suppressSizeSync = false;
+        }
+
+        // ===== Live receipt rail =====
+        //
+        // A 400 ms DispatcherTimer recomputes the receipt from the current form
+        // state. Cheap, keeps things reactive without wiring TextChanged/Checked
+        // handlers to every control on the page. The proper reactive plumbing
+        // arrives with the composite-editor overlay in alpha.2.
+
+        private DispatcherTimer? _receiptTimer;
+
+        private void StartReceiptTimer()
+        {
+            _receiptTimer = new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromMilliseconds(400)
+            };
+            _receiptTimer.Tick += (_, _) =>
+            {
+                try { UpdateReceipt(); } catch { /* ignore; timer keeps ticking */ }
+            };
+            _receiptTimer.Start();
+        }
+
+        private void UpdateReceipt()
+        {
+            // Identity strip runs — always keep the persona sentence current.
+            var installerName = string.IsNullOrWhiteSpace(TxtInstallerExeName.Text)
+                ? "YourSimulatedSetup.exe" : TxtInstallerExeName.Text.Trim();
+            var appName = string.IsNullOrWhiteSpace(TxtAppName.Text)
+                ? "your app" : TxtAppName.Text.Trim();
+            if (RunInstallerExeName != null) RunInstallerExeName.Text = installerName;
+            if (RunPersonaAppName != null)   RunPersonaAppName.Text   = appName;
+
+            // Behaviors enabled — one line each so the rail stays scannable.
+            var behaviors = new List<string>();
+            if (ChkTestFilesEnabled.IsChecked == true) behaviors.Add("Files");
+            if (ChkRegistryEnabled.IsChecked == true)  behaviors.Add("Registry");
+            if (ChkDesktopShortcut.IsChecked == true || ChkStartMenuEntry.IsChecked == true)
+                behaviors.Add("Shortcuts");
+            if (ChkFileAssociations.IsChecked == true) behaviors.Add("File associations");
+            if (ChkContextMenu.IsChecked == true)      behaviors.Add("Context menu");
+            if (ChkEnvVars.IsChecked == true)          behaviors.Add("Env vars");
+            if (ChkService.IsChecked == true)          behaviors.Add("Windows service");
+            if (ChkScheduledTask.IsChecked == true)    behaviors.Add("Scheduled task");
+            if (ChkFirewall.IsChecked == true)         behaviors.Add("Firewall");
+            if (ChkProtocolHandlers.IsChecked == true) behaviors.Add("Protocol handlers");
+            if (ChkActiveSetup.IsChecked == true)      behaviors.Add("Active Setup");
+            if (ChkAppPaths.IsChecked == true)         behaviors.Add("App Paths");
+            if (ChkStartup.IsChecked == true)          behaviors.Add("Startup");
+            if (LblReceiptBehaviors != null)
+                LblReceiptBehaviors.Text = behaviors.Count == 0 ? "none" : string.Join("\n", behaviors);
+
+            // Installer size
+            if (LblReceiptSize != null)
+            {
+                if (ChkInstallerSize.IsChecked == true)
+                {
+                    var mb = ParseInstallerSizeMB();
+                    LblReceiptSize.Text = mb >= 1024
+                        ? $"{mb} MB  ({mb / 1024.0:0.##} GB)"
+                        : $"{mb} MB";
+                }
+                else
+                {
+                    LblReceiptSize.Text = "smallest possible";
+                }
+            }
+
+            // Elevation
+            if (LblReceiptElevation != null)
+            {
+                var ctx = CboDefaultContext.SelectedIndex == 1 ? "Per-user" : "Per-machine";
+                var admin = ChkRequireAdmin.IsChecked == true ? "  ·  UAC" : "";
+                LblReceiptElevation.Text = ctx + admin;
+            }
+
+            // Install directory
+            if (LblReceiptInstallDir != null)
+                LblReceiptInstallDir.Text = TxtDefaultPath.Text;
+
+            // Bottom-of-rail summary
+            if (LblReceiptSummary != null)
+                LblReceiptSummary.Text = $"Generate produces {installerName}. Run it and it installs {appName}, performs the behaviors above, and drops the audit viewer.";
+        }
+
+        // ===== Presets =====
+        //
+        // Presets replace the install-action behaviors and their sample data.
+        // Identity, wizard pages, and uninstall settings are preserved (per
+        // docs/ux/README.md). Placeholders <Publisher>/<AppName>/<AppExe>/
+        // <Version> resolve against the current Identity at apply time.
+
+        private void ApplyPreset_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button b && b.Tag is string presetName)
+                ApplyPreset(presetName);
+        }
+
+        private void ApplyPreset(string presetName)
+        {
+            string iniText;
+            try
+            {
+                iniText = ReadEmbeddedPreset(presetName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not load preset '{presetName}':\n{ex.Message}",
+                    "TestPackage", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Snapshot everything currently on-screen so we can carry identity /
+            // wizard / uninstall / cosmetics across untouched.
+            var current = CollectToModel();
+
+            // Start from the current model; reset only the install-action fields.
+            var next = CloneModel(current);
+            ResetInstallActions(next);
+
+            // Layer the preset's install-action data on top.
+            ApplyPresetIniToModel(next, iniText, current);
+
+            _model = next;
+            PopulateFromModel(_model);
+            UpdateReceipt();
+        }
+
+        private static string ReadEmbeddedPreset(string presetName)
+        {
+            var asm = Assembly.GetExecutingAssembly();
+            // Manifest resource name is "<default-namespace>.Presets.<name>.ini"
+            var resource = $"TestPackage.Configurator.Presets.{presetName}.ini";
+            using var stream = asm.GetManifestResourceStream(resource)
+                ?? throw new FileNotFoundException($"Embedded preset not found: {resource}");
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
+        }
+
+        private static ConfigModel CloneModel(ConfigModel s)
+        {
+            // Round-trip via the config writer/parser — this is the same
+            // serialization the app already uses and it guarantees fidelity.
+            var text = ConfigWriter.Write(s);
+            var tmp = Path.Combine(Path.GetTempPath(), "TestPackage_Clone_" + Guid.NewGuid().ToString("N")[..8] + ".ini");
+            try
+            {
+                File.WriteAllText(tmp, text);
+                return ConfigModel.FromParser(ConfigParser.Load(tmp));
+            }
+            finally
+            {
+                try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+            }
+        }
+
+        private static void ResetInstallActions(ConfigModel m)
+        {
+            m.TestFilesEnabled = false;                m.TestFiles = "";
+            m.RegistryEnabled = false;                 m.RegistryEntries = "";
+            m.CreateDesktopShortcut = false;
+            m.CreateStartMenuEntry = false;
+            m.PinToStartMenu = false;
+            m.FileAssociationsEnabled = false;         m.FileAssociations = "";
+            m.ContextMenuEnabled = false;              m.ContextMenuEntries = "";
+            m.EnvironmentVariablesEnabled = false;     m.EnvironmentVariables = "";
+            m.ServicesEnabled = false;
+            m.ScheduledTasksEnabled = false;
+            m.FirewallRulesEnabled = false;            m.FirewallRules = "";
+            m.ProtocolHandlersEnabled = false;
+            m.ActiveSetupEnabled = false;
+            m.AppPathsEnabled = false;
+            m.StartupEnabled = false;
+            m.FontsEnabled = false;
+            m.COMRegistrationEnabled = false;
+        }
+
+        private static void ApplyPresetIniToModel(ConfigModel m, string iniText, ConfigModel identity)
+        {
+            var sections = ParseIndicativeIni(iniText);
+
+            string Sub(string s) => (s ?? "")
+                .Replace("<Publisher>", identity.AppPublisher ?? "")
+                .Replace("<AppName>", identity.AppName ?? "")
+                .Replace("<AppExe>", identity.AppExeName ?? "")
+                .Replace("<Version>", identity.AppVersion ?? "");
+
+            bool GetEnabled(string sect)
+            {
+                if (!sections.TryGetValue(sect, out var s)) return false;
+                if (!s.TryGetValue("Enabled", out var v)) return false;
+                return v == "1" || v.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+
+            List<string> Collect(string sect, string prefix)
+            {
+                var list = new List<string>();
+                if (!sections.TryGetValue(sect, out var s)) return list;
+                for (int i = 1; ; i++)
+                {
+                    if (!s.TryGetValue(prefix + i, out var v)) break;
+                    list.Add(Sub(v));
+                }
+                return list;
+            }
+
+            // Files
+            m.TestFilesEnabled = GetEnabled("Files");
+            var files = Collect("Files", "File");
+            if (files.Count > 0) m.TestFiles = string.Join(",", files);
+
+            // Registry
+            m.RegistryEnabled = GetEnabled("Registry");
+            var regs = Collect("Registry", "Entry");
+            if (regs.Count > 0) m.RegistryEntries = string.Join(",", regs);
+
+            // Shortcuts (multi-key section)
+            if (GetEnabled("Shortcuts"))
+            {
+                var sc = sections["Shortcuts"];
+                if (sc.TryGetValue("Desktop", out var d) && d == "1")     m.CreateDesktopShortcut = true;
+                if (sc.TryGetValue("StartMenu", out var sm) && sm == "1") m.CreateStartMenuEntry = true;
+                if (sc.TryGetValue("Pin", out var pin) && pin == "1")     m.PinToStartMenu = true;
+                if (sc.TryGetValue("StartMenuFolder", out var smf) && !string.IsNullOrWhiteSpace(smf))
+                    m.StartMenuFolder = Sub(smf);
+            }
+
+            // File associations
+            m.FileAssociationsEnabled = GetEnabled("FileAssociations");
+            var assocs = Collect("FileAssociations", "Assoc");
+            if (assocs.Count > 0) m.FileAssociations = string.Join(",", assocs);
+
+            // Context menu
+            m.ContextMenuEnabled = GetEnabled("ContextMenu");
+
+            // Env vars — presets carry "NAME|VALUE" (2-field), real format is
+            // "Scope|Name|Value" (3-field). Default scope to User when absent.
+            m.EnvironmentVariablesEnabled = GetEnabled("EnvVars");
+            var vars = Collect("EnvVars", "Var");
+            if (vars.Count > 0)
+            {
+                var expanded = vars.Select(v =>
+                {
+                    var parts = v.Split('|');
+                    return parts.Length >= 3 ? v : "User|" + v;
+                });
+                m.EnvironmentVariables = string.Join(",", expanded);
+            }
+
+            // Service
+            m.ServicesEnabled = GetEnabled("Service");
+            if (sections.TryGetValue("Service", out var svc))
+            {
+                if (svc.TryGetValue("ServiceName", out var sn)) m.ServiceName = Sub(sn);
+                if (svc.TryGetValue("DisplayName", out var dn)) m.ServiceDisplayName = Sub(dn);
+                if (svc.TryGetValue("StartType", out var st))   m.ServiceStartType = st;
+            }
+
+            // Scheduled task
+            m.ScheduledTasksEnabled = GetEnabled("ScheduledTask");
+            if (sections.TryGetValue("ScheduledTask", out var tsk))
+            {
+                if (tsk.TryGetValue("TaskName", out var tn)) m.TaskName = Sub(tn);
+                if (tsk.TryGetValue("Schedule", out var sc)) m.TaskSchedule = sc;
+            }
+
+            // Firewall
+            m.FirewallRulesEnabled = GetEnabled("Firewall");
+            var rules = Collect("Firewall", "Rule");
+            if (rules.Count > 0) m.FirewallRules = string.Join(",", rules);
+
+            // Simple booleans
+            m.ProtocolHandlersEnabled = GetEnabled("Protocols");
+            m.ActiveSetupEnabled      = GetEnabled("ActiveSetup");
+            m.AppPathsEnabled         = GetEnabled("AppPaths");
+            m.StartupEnabled          = GetEnabled("Startup");
+            m.FontsEnabled            = GetEnabled("Fonts");
+            m.COMRegistrationEnabled  = GetEnabled("COM");
+
+            // Suggested install context
+            if (sections.TryGetValue("Install", out var inst)
+                && inst.TryGetValue("DefaultContext", out var ctx))
+            {
+                m.DefaultContext = ctx.Equals("machine", StringComparison.OrdinalIgnoreCase)
+                    ? "Machine" : "User";
+            }
+        }
+
+        // Permissive INI parser for the indicative preset files. Handles the
+        // "[Section] Key=Value" on-one-line style the presets use, and the
+        // standard multi-line style.
+        private static Dictionary<string, Dictionary<string, string>> ParseIndicativeIni(string text)
+        {
+            var result = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+            string current = "";
+            foreach (var raw in text.Split('\n'))
+            {
+                var line = raw.Trim().TrimEnd('\r');
+                if (string.IsNullOrEmpty(line) || line.StartsWith(";") || line.StartsWith("#")) continue;
+
+                while (line.StartsWith("["))
+                {
+                    var end = line.IndexOf(']');
+                    if (end < 0) break;
+                    current = line[1..end].Trim();
+                    if (!result.ContainsKey(current))
+                        result[current] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    line = line[(end + 1)..].Trim();
+                    if (line.Length == 0) break;
+                }
+                if (line.Length == 0) continue;
+
+                var eq = line.IndexOf('=');
+                if (eq > 0 && !string.IsNullOrEmpty(current))
+                {
+                    var key = line[..eq].Trim();
+                    var val = line[(eq + 1)..].Trim();
+                    if (!result.ContainsKey(current))
+                        result[current] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    result[current][key] = val;
+                }
+            }
+            return result;
         }
     }
 }

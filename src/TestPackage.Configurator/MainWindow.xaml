@@ -1,418 +1,441 @@
 <Window x:Class="TestPackage.Configurator.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="TestPackage" Width="920" Height="650"
+        Title="TestPackage" Width="1400" Height="900"
+        MinWidth="1100" MinHeight="700"
         WindowStartupLocation="CenterScreen"
-        Background="#F2F3F5">
+        Background="{StaticResource BgBrush}"
+        FontFamily="{StaticResource BodyFont}"
+        FontSize="13"
+        Foreground="{StaticResource InkBrush}">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>  <!-- Header -->
+            <RowDefinition Height="Auto"/>  <!-- Preset strip -->
+            <RowDefinition Height="Auto"/>  <!-- Identity strip -->
+            <RowDefinition Height="*"/>     <!-- Frames + Receipt -->
+            <RowDefinition Height="Auto"/>  <!-- Footer -->
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <Border Grid.Row="0" Background="#0078D4" Padding="20,12" CornerRadius="0">
-            <Grid>
+        <!-- ================= Header ================= -->
+        <Border Grid.Row="0" Background="{StaticResource BgBrush}" BorderBrush="{StaticResource InkBrush}" BorderThickness="0,0,0,2">
+            <Grid Margin="24,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource BrandMark}" Text="TESTPACKAGE"/>
+                    <TextBlock Style="{StaticResource BrandKicker}" Text="INSTALLER GENERATOR · V3.0" Margin="12,0,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="Load config"  Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" Click="LoadConfig_Click"/>
+                    <Button Content="Save config"  Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" Click="SaveConfig_Click"/>
+                    <Button Content="Preview wizard" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" Click="Preview_Click"/>
+                    <Button Content="Generate installer" Style="{StaticResource PrimaryButton}" Click="GenerateInstaller_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ================= Preset strip ================= -->
+        <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource InkBrush}" BorderThickness="0,0,0,2">
+            <StackPanel Orientation="Horizontal" Margin="24,10" VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource BrandKicker}" Text="START FROM" Margin="0,0,12,0"/>
+                <Button Content="Blank"                Style="{StaticResource ChipButton}" Tag="blank"                Click="ApplyPreset_Click"/>
+                <Button Content="Typical desktop app"  Style="{StaticResource ChipButton}" Tag="typical-desktop-app"  Click="ApplyPreset_Click"/>
+                <Button Content="Service + firewall"   Style="{StaticResource ChipButton}" Tag="service-firewall"     Click="ApplyPreset_Click"/>
+                <Button Content="Enterprise"           Style="{StaticResource ChipButton}" Tag="enterprise"           Click="ApplyPreset_Click"/>
+                <TextBlock Style="{StaticResource MutedText}" Text="Presets replace install actions and their sample data; identity, wizard and uninstall are untouched." Margin="16,0,0,0" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ================= Identity strip ================= -->
+        <Border Grid.Row="2" Background="{StaticResource BgBrush}" BorderBrush="{StaticResource InkBrush}" BorderThickness="0,0,0,2">
+            <Grid Margin="24,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Style="{StaticResource BrandKicker}" Text="YOU ARE DESIGNING A FAKE APP" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap">
+                    <Run Text="Everything below configures the "/>
+                    <Run FontWeight="Bold" Text="generated installer"/>
+                    <Run Text=" — not TestPackage itself. The installer will run "/>
+                    <Run x:Name="RunInstallerExeName" FontFamily="{StaticResource MonoFont}" Text="YourSimulatedSetup.exe"/>
+                    <Run Text=", install "/>
+                    <Run x:Name="RunPersonaAppName" FontWeight="Bold" Text="My Test Package"/>
+                    <Run Text=", and drop an audit viewer that shows everything it did."/>
+                </TextBlock>
+            </Grid>
+        </Border>
+
+        <!-- ================= Frames + Receipt ================= -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="372"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Frames column -->
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Padding="24,20,16,20">
+                <StackPanel>
+
+                    <!-- ===== Frame 01 — Identity ===== -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource FrameEyebrow}" Text="FRAME 01 · IDENTITY"/>
+                            <TextBlock Style="{StaticResource FrameHeading}" Text="Identity"/>
+                            <TextBlock Style="{StaticResource FrameKicker}" Text="What your fake app is called and who published it. Names flow through the derived install path and Start Menu folder."/>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="APPLICATION NAME"/>
+                            <TextBox x:Name="TxtAppName" Style="{StaticResource FieldTextBox}" TextChanged="DefaultPathSource_TextChanged"/>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="VERSION"/>
+                                    <TextBox x:Name="TxtAppVersion" Style="{StaticResource MonoTextBox}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="PUBLISHER"/>
+                                    <TextBox x:Name="TxtAppPublisher" Style="{StaticResource FieldTextBox}" TextChanged="DefaultPathSource_TextChanged"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="URL"/>
+                            <TextBox x:Name="TxtAppURL" Style="{StaticResource FieldTextBox}"/>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="PRODUCT GUID"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" x:Name="TxtAppGUID" Style="{StaticResource MonoTextBox}"/>
+                                <Button Grid.Column="1" Content="New GUID" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Click="GenerateGUID_Click"/>
+                            </Grid>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="INSTALL CONTEXT"/>
+                            <StackPanel Orientation="Horizontal">
+                                <ComboBox x:Name="CboDefaultContext" Style="{StaticResource ModernComboBox}" Width="220" HorizontalAlignment="Left">
+                                    <ComboBoxItem Content="Machine"/>
+                                    <ComboBoxItem Content="User"/>
+                                </ComboBox>
+                                <CheckBox x:Name="ChkRequireAdmin" Style="{StaticResource FeatureToggle}" Content="Require Administrator (UAC)" Margin="24,0,0,0"/>
+                            </StackPanel>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="DEFAULT INSTALL DIRECTORY"/>
+                            <TextBox x:Name="TxtDefaultPath" Style="{StaticResource MonoTextBox}" TextChanged="DefaultPath_TextChanged"/>
+                            <TextBlock Style="{StaticResource MutedText}" Text="Derived from Publisher\App Name. Type to override; clear to re-derive." Margin="0,2,0,0"/>
+                            <CheckBox x:Name="ChkAllowCustomPath" Style="{StaticResource FeatureToggle}" Content="Allow user to customise path in the wizard" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ===== Frame 02 — Wizard ===== -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource FrameEyebrow}" Text="FRAME 02 · WIZARD"/>
+                            <TextBlock Style="{StaticResource FrameHeading}" Text="Wizard experience"/>
+                            <TextBlock Style="{StaticResource FrameKicker}" Text="Which pages the installer shows, what they default to, and the licence copy."/>
+
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="PAGE ORDER"/>
+                            <CheckBox x:Name="ChkShowWelcome"         Style="{StaticResource FeatureToggle}" Content="Welcome"/>
+                            <CheckBox x:Name="ChkShowEULA"            Style="{StaticResource FeatureToggle}" Content="Licence agreement"/>
+                            <CheckBox x:Name="ChkShowInstallContext"  Style="{StaticResource FeatureToggle}" Content="Install context (Machine/User)"/>
+                            <CheckBox x:Name="ChkShowTargetDirectory" Style="{StaticResource FeatureToggle}" Content="Target directory"/>
+                            <CheckBox x:Name="ChkShowComponents"      Style="{StaticResource FeatureToggle}" Content="Component selection"/>
+                            <CheckBox x:Name="ChkShowDesktopShortcut" Style="{StaticResource FeatureToggle}" Content="Desktop shortcut option"/>
+                            <CheckBox x:Name="ChkShowStartMenuPin"    Style="{StaticResource FeatureToggle}" Content="Start Menu pin option"/>
+                            <CheckBox x:Name="ChkShowRebootOption"    Style="{StaticResource FeatureToggle}" Content="Reboot option"/>
+                            <CheckBox x:Name="ChkShowActiveSetup"     Style="{StaticResource FeatureToggle}" Content="Active Setup option"/>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="PRE-CHECKED DEFAULTS"/>
+                            <CheckBox x:Name="ChkDefaultDesktopShortcut" Style="{StaticResource FeatureToggle}" Content="Desktop shortcut on"/>
+                            <CheckBox x:Name="ChkDefaultStartMenuPin"    Style="{StaticResource FeatureToggle}" Content="Start Menu pin on"/>
+                            <CheckBox x:Name="ChkDefaultActiveSetup"     Style="{StaticResource FeatureToggle}" Content="Active Setup on"/>
+                            <CheckBox x:Name="ChkDefaultReboot"          Style="{StaticResource FeatureToggle}" Content="Reboot prompt on"/>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="EULA TEXT"/>
+                            <TextBox x:Name="TxtEULAText" Style="{StaticResource FieldTextBox}" TextWrapping="Wrap" AcceptsReturn="True" Height="120" VerticalScrollBarVisibility="Auto"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ===== Frame 03 — Install actions ===== -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource FrameEyebrow}" Text="FRAME 03 · INSTALL ACTIONS"/>
+                            <TextBlock Style="{StaticResource FrameHeading}" Text="Install actions"/>
+                            <TextBlock Style="{StaticResource FrameKicker}" Text="What the installer does to Windows. Turn a behavior on to edit its sample data. Composite editors get their proper overlay in alpha.2 — pipe-format rows survive one more phase."/>
+
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="INSTALLER SIZE"/>
+                            <CheckBox x:Name="ChkInstallerSize" Style="{StaticResource FeatureToggle}" Content="Pad the generated setup .exe to a target size"/>
+                            <TextBlock Style="{StaticResource MutedText}" Text="Slider: fine MB control on the left, GB on the right. Up to 100 GB. Install-time disk-space check runs against the requested size." TextWrapping="Wrap" Margin="0,0,0,6"/>
+                            <Slider x:Name="SldInstallerSize" Minimum="0" Maximum="100" Width="420" HorizontalAlignment="Left" Margin="0,4,0,4" ValueChanged="InstallerSizeSlider_Changed"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource FieldLabel}" Text="EXACT (MB)" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox x:Name="TxtInstallerSizeMB" Style="{StaticResource MonoTextBox}" Width="120" Text="0" TextChanged="InstallerSizeMB_Changed"/>
+                                <TextBlock x:Name="LblInstallerSizeReadout" Style="{StaticResource MonoText}" Foreground="{StaticResource InkFaintBrush}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                            </StackPanel>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="COMPONENTS"/>
+                            <TextBlock Style="{StaticResource MutedText}" Text="Optional features the wizard offers on the Component Selection page."/>
+                            <StackPanel x:Name="ComponentsList" Margin="0,8,0,0"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <TextBox x:Name="TxtNewComponent" Style="{StaticResource FieldTextBox}" Width="220" Margin="0,0,8,0"/>
+                                <Button Content="+ Add component" Style="{StaticResource SecondaryButton}" Click="AddComponent_Click"/>
+                            </StackPanel>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <CheckBox x:Name="ChkTestFilesEnabled" Style="{StaticResource FeatureToggle}" Content="Test files"/>
+                            <TextBlock Style="{StaticResource MutedText}" Text="Marker files the installer writes to verify file-system capture."/>
+                            <StackPanel x:Name="TestFilesList" Margin="0,6,0,0"/>
+                            <Button Content="+ Add test file" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddTestFile_Click"/>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <CheckBox x:Name="ChkRegistryEnabled" Style="{StaticResource FeatureToggle}" Content="Registry entries"/>
+                            <TextBlock Style="{StaticResource MutedText}" Text="HKCU / HKLM values written during install."/>
+                            <StackPanel x:Name="RegistryEntriesList" Margin="0,6,0,0"/>
+                            <Button Content="+ Add registry entry" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddRegistryEntry_Click"/>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="SHORTCUTS"/>
+                            <CheckBox x:Name="ChkDesktopShortcut" Style="{StaticResource FeatureToggle}" Content="Create desktop shortcut"/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="SHORTCUT NAME"/>
+                            <TextBox x:Name="TxtDesktopShortcutName" Style="{StaticResource FieldTextBox}"/>
+                            <CheckBox x:Name="ChkStartMenuEntry" Style="{StaticResource FeatureToggle}" Content="Create Start Menu entry" Margin="0,8,0,0"/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="START MENU FOLDER"/>
+                            <TextBox x:Name="TxtStartMenuFolder" Style="{StaticResource MonoTextBox}" TextChanged="StartMenuFolder_TextChanged"/>
+                            <TextBlock Style="{StaticResource MutedText}" Text="Derived from Publisher\App Name. Type to override; clear to re-derive." Margin="0,2,0,0"/>
+                            <CheckBox x:Name="ChkPinToStartMenu" Style="{StaticResource FeatureToggle}" Content="Pin to Start Menu" Margin="0,8,0,0"/>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <CheckBox x:Name="ChkFileAssociations" Style="{StaticResource FeatureToggle}" Content="File associations"/>
+                            <StackPanel x:Name="FileAssociationsList" Margin="0,6,0,0"/>
+                            <Button Content="+ Add association" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddFileAssociation_Click"/>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <CheckBox x:Name="ChkContextMenu" Style="{StaticResource FeatureToggle}" Content="Shell context menu entries"/>
+                            <StackPanel x:Name="ContextMenuList" Margin="0,6,0,0"/>
+                            <Button Content="+ Add context menu entry" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddContextMenu_Click"/>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <CheckBox x:Name="ChkEnvVars" Style="{StaticResource FeatureToggle}" Content="Environment variables"/>
+                            <StackPanel x:Name="EnvVarsList" Margin="0,6,0,0"/>
+                            <Button Content="+ Add variable" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddEnvVar_Click"/>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <CheckBox x:Name="ChkService" Style="{StaticResource FeatureToggle}" Content="Windows service"/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="SERVICE NAME"/>
+                            <TextBox x:Name="TxtServiceName" Style="{StaticResource FieldTextBox}"/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="DISPLAY NAME"/>
+                            <TextBox x:Name="TxtServiceDisplayName" Style="{StaticResource FieldTextBox}"/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="START TYPE"/>
+                            <ComboBox x:Name="CboServiceStartType" Style="{StaticResource ModernComboBox}" Width="220" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="Automatic"/>
+                                <ComboBoxItem Content="Manual" IsSelected="True"/>
+                                <ComboBoxItem Content="Disabled"/>
+                            </ComboBox>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <CheckBox x:Name="ChkScheduledTask" Style="{StaticResource FeatureToggle}" Content="Scheduled task"/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="TASK NAME"/>
+                            <TextBox x:Name="TxtTaskName" Style="{StaticResource FieldTextBox}"/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="SCHEDULE"/>
+                            <ComboBox x:Name="CboTaskSchedule" Style="{StaticResource ModernComboBox}" Width="220" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="Daily" IsSelected="True"/>
+                                <ComboBoxItem Content="Weekly"/>
+                                <ComboBoxItem Content="AtLogon"/>
+                                <ComboBoxItem Content="AtStartup"/>
+                            </ComboBox>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <CheckBox x:Name="ChkFirewall" Style="{StaticResource FeatureToggle}" Content="Firewall rules"/>
+                            <StackPanel x:Name="FirewallRulesList" Margin="0,6,0,0"/>
+                            <Button Content="+ Add firewall rule" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddFirewallRule_Click"/>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <CheckBox x:Name="ChkProtocolHandlers" Style="{StaticResource FeatureToggle}" Content="URI protocol handlers"/>
+                            <StackPanel x:Name="ProtocolHandlersList" Margin="0,6,0,0"/>
+                            <Button Content="+ Add protocol" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddProtocolHandler_Click"/>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="OTHER"/>
+                            <CheckBox x:Name="ChkActiveSetup" Style="{StaticResource FeatureToggle}" Content="Register Active Setup component"/>
+                            <CheckBox x:Name="ChkAppPaths"    Style="{StaticResource FeatureToggle}" Content="Register in App Paths (Run dialog)"/>
+                            <CheckBox x:Name="ChkStartup"     Style="{StaticResource FeatureToggle}" Content="Add to Windows startup"/>
+                            <ComboBox x:Name="CboStartupMethod" Style="{StaticResource ModernComboBox}" Width="220" HorizontalAlignment="Left" Margin="0,4,0,0">
+                                <ComboBoxItem Content="Registry" IsSelected="True"/>
+                                <ComboBoxItem Content="StartupFolder"/>
+                            </ComboBox>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ===== Frame 04 — Uninstall ===== -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource FrameEyebrow}" Text="FRAME 04 · UNINSTALL"/>
+                            <TextBlock Style="{StaticResource FrameHeading}" Text="Uninstall &amp; reboot"/>
+                            <TextBlock Style="{StaticResource FrameKicker}" Text="How cleanly the fake app removes itself — including things left behind on purpose, for testing orphan detection."/>
+
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="UNINSTALL BEHAVIOR"/>
+                            <CheckBox x:Name="ChkRegisterUninstaller" Style="{StaticResource FeatureToggle}" Content="Register in Add/Remove Programs"/>
+                            <CheckBox x:Name="ChkCleanFiles"          Style="{StaticResource FeatureToggle}" Content="Clean files on uninstall"/>
+                            <CheckBox x:Name="ChkCleanRegistry"       Style="{StaticResource FeatureToggle}" Content="Clean registry on uninstall"/>
+                            <CheckBox x:Name="ChkCleanShortcuts"      Style="{StaticResource FeatureToggle}" Content="Clean shortcuts on uninstall"/>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="INTENTIONAL LEFTOVERS"/>
+                            <CheckBox x:Name="ChkLeaveFiles" Style="{StaticResource FeatureToggle}" Content="Leave files behind after uninstall"/>
+                            <TextBox x:Name="TxtLeftoverFiles" Style="{StaticResource MonoTextBox}" TextWrapping="Wrap"/>
+                            <CheckBox x:Name="ChkLeaveRegistry" Style="{StaticResource FeatureToggle}" Content="Leave registry entries behind after uninstall" Margin="0,8,0,0"/>
+                            <TextBox x:Name="TxtLeftoverRegistry" Style="{StaticResource MonoTextBox}" TextWrapping="Wrap"/>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="REBOOT"/>
+                            <CheckBox x:Name="ChkPromptReboot" Style="{StaticResource FeatureToggle}" Content="Prompt for reboot after installation"/>
+                            <CheckBox x:Name="ChkForceReboot"  Style="{StaticResource FeatureToggle}" Content="Force reboot (use with caution!)"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ===== Frame 05 — Wizard appearance ===== -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource FrameEyebrow}" Text="FRAME 05 · WIZARD APPEARANCE"/>
+                            <TextBlock Style="{StaticResource FrameHeading}" Text="Wizard appearance"/>
+                            <TextBlock Style="{StaticResource FrameKicker}" Text="Cosmetics of the generated wizard — banner, accent and pacing."/>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="BANNER COLOR"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Border x:Name="BannerColorPreview" Width="28" Height="28" Background="#0078D4"
+                                        BorderBrush="{StaticResource InkBrush}" BorderThickness="1" Margin="0,0,8,0"
+                                        Cursor="Hand" MouseLeftButtonUp="BannerColorPicker_Click"/>
+                                <TextBox x:Name="TxtBannerColor" Style="{StaticResource MonoTextBox}" Width="140" TextChanged="BannerColor_TextChanged"/>
+                            </StackPanel>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="ACCENT COLOR"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Border x:Name="AccentColorPreview" Width="28" Height="28" Background="#106EBE"
+                                        BorderBrush="{StaticResource InkBrush}" BorderThickness="1" Margin="0,0,8,0"
+                                        Cursor="Hand" MouseLeftButtonUp="AccentColorPicker_Click"/>
+                                <TextBox x:Name="TxtAccentColor" Style="{StaticResource MonoTextBox}" Width="140" TextChanged="AccentColor_TextChanged"/>
+                            </StackPanel>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="PROGRESS &amp; PACING"/>
+                            <CheckBox x:Name="ChkShowProgressBar" Style="{StaticResource FeatureToggle}" Content="Show progress bar during install"/>
+                            <CheckBox x:Name="ChkSimulateDelay"   Style="{StaticResource FeatureToggle}" Content="Simulate install delay"/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="DELAY PER STEP (SECONDS)"/>
+                            <TextBox x:Name="TxtDelaySec" Style="{StaticResource MonoTextBox}" Width="120" HorizontalAlignment="Left" Text="0.5"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ===== Frame 06 — Package & generate ===== -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource FrameEyebrow}" Text="FRAME 06 · PACKAGE &amp; GENERATE"/>
+                            <TextBlock Style="{StaticResource FrameHeading}" Text="Package &amp; generate"/>
+                            <TextBlock Style="{StaticResource FrameKicker}" Text="What lands on disk when you press Generate."/>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="INSTALLER EXE NAME"/>
+                            <TextBox x:Name="TxtInstallerExeName" Style="{StaticResource MonoTextBox}"/>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="FAKE APP EXE NAME"/>
+                            <TextBox x:Name="TxtAppExeName" Style="{StaticResource MonoTextBox}"/>
+
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="OUTPUT FOLDER"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" x:Name="TxtOutputFolder" Style="{StaticResource MonoTextBox}" IsReadOnly="True"/>
+                                <Button Grid.Column="1" Content="Browse…" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Click="BrowseOutput_Click"/>
+                            </Grid>
+
+                            <TextBlock Style="{StaticResource MutedText}" Margin="0,10,0,0" TextWrapping="Wrap"
+                                       Text="Silent install (/S) and command-line overrides are built in — see README for switches."/>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Receipt rail -->
+            <Border Grid.Column="1" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource InkBrush}" BorderThickness="2,0,0,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,20,20,20">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource BrandKicker}" Text="LIVE MANIFEST"/>
+                        <TextBlock Style="{StaticResource FrameHeading}" Text="Receipt" Margin="0,4,0,4"/>
+                        <TextBlock Style="{StaticResource MutedText}" Text="Footprint on the test machine — updates as you edit." TextWrapping="Wrap"/>
+
+                        <Border Style="{StaticResource HeavyRule}"/>
+
+                        <TextBlock Style="{StaticResource BrandKicker}" Text="BEHAVIORS ENABLED"/>
+                        <TextBlock x:Name="LblReceiptBehaviors" Style="{StaticResource MonoText}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+
+                        <Border Style="{StaticResource LightRule}"/>
+
+                        <TextBlock Style="{StaticResource BrandKicker}" Text="INSTALLER SIZE"/>
+                        <TextBlock x:Name="LblReceiptSize" Style="{StaticResource MonoText}" Margin="0,4,0,0"/>
+
+                        <Border Style="{StaticResource LightRule}"/>
+
+                        <TextBlock Style="{StaticResource BrandKicker}" Text="ELEVATION"/>
+                        <TextBlock x:Name="LblReceiptElevation" Style="{StaticResource MonoText}" Margin="0,4,0,0"/>
+
+                        <Border Style="{StaticResource LightRule}"/>
+
+                        <TextBlock Style="{StaticResource BrandKicker}" Text="INSTALL DIRECTORY"/>
+                        <TextBlock x:Name="LblReceiptInstallDir" Style="{StaticResource MonoText}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+
+                        <Border Style="{StaticResource HeavyRule}"/>
+
+                        <TextBlock Style="{StaticResource BrandKicker}" Text="WHEN GENERATED"/>
+                        <TextBlock x:Name="LblReceiptSummary" Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- ================= Footer ================= -->
+        <Border Grid.Row="4" Background="{StaticResource BgBrush}" BorderBrush="{StaticResource InkBrush}" BorderThickness="0,2,0,0">
+            <Grid Margin="24,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel>
-                    <TextBlock Text="TestPackage" FontSize="20" FontWeight="Bold" Foreground="White"/>
-                    <TextBlock Text="Design and generate simulated installers for testing" FontSize="11" Foreground="#CCE5FF" Margin="0,2,0,0"/>
-                </StackPanel>
-                <TextBlock Grid.Column="1" Text="v2.5.1" Foreground="#99CCFF" FontSize="11" VerticalAlignment="Center"/>
-            </Grid>
-        </Border>
-
-        <!-- Output Settings -->
-        <Border Grid.Row="1" Background="White" Padding="15,10" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
-                <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="Installer EXE Name" Margin="0,0,8,0"/>
-                <TextBox Grid.Column="0" Grid.Row="1" x:Name="TxtInstallerExeName" Style="{StaticResource FieldTextBox}" Text="YourSimulatedSetup.exe" Margin="0,0,8,0"/>
-                <TextBlock Grid.Column="1" Style="{StaticResource FieldLabel}" Text="Application EXE Name" Margin="0,0,8,0"/>
-                <TextBox Grid.Column="1" Grid.Row="1" x:Name="TxtAppExeName" Style="{StaticResource FieldTextBox}" Text="YourSimulatedApp.exe" Margin="0,0,8,0"/>
-                <TextBlock Grid.Column="2" Style="{StaticResource FieldLabel}" Text="Output Folder"/>
-                <Grid Grid.Column="2" Grid.Row="1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBox x:Name="TxtOutputFolder" Style="{StaticResource FieldTextBox}" IsReadOnly="True"/>
-                    <Button Grid.Column="1" Content="..." Style="{StaticResource SmallButton}" Margin="4,0,0,2" Click="BrowseOutput_Click"/>
-                </Grid>
-            </Grid>
-        </Border>
-
-        <!-- Tab Control -->
-        <TabControl Grid.Row="2" x:Name="ConfigTabs" Style="{StaticResource ModernTabControl}" Margin="12,8,12,0">
-
-            <!-- Tab 1: General -->
-            <TabItem Header="General" Style="{StaticResource ModernTabItem}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,8">
-                    <StackPanel Margin="4,0">
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionLabel}" Text="Application Metadata" Margin="0,0,0,6"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Application Name"/>
-                                <TextBox x:Name="TxtAppName" Style="{StaticResource FieldTextBox}" TextChanged="DefaultPathSource_TextChanged"/>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Margin="0,0,8,0">
-                                        <TextBlock Style="{StaticResource FieldLabel}" Text="Version"/>
-                                        <TextBox x:Name="TxtAppVersion" Style="{StaticResource FieldTextBox}"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Style="{StaticResource FieldLabel}" Text="Publisher"/>
-                                        <TextBox x:Name="TxtAppPublisher" Style="{StaticResource FieldTextBox}" TextChanged="DefaultPathSource_TextChanged"/>
-                                    </StackPanel>
-                                </Grid>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="URL"/>
-                                <TextBox x:Name="TxtAppURL" Style="{StaticResource FieldTextBox}"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="GUID"/>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBox x:Name="TxtAppGUID" Style="{StaticResource FieldTextBox}"/>
-                                    <Button Grid.Column="1" Content="Generate New" Style="{StaticResource SmallButton}" Margin="4,0,0,0" Click="GenerateGUID_Click"/>
-                                </Grid>
-                                <CheckBox x:Name="ChkRequireAdmin" Style="{StaticResource FeatureToggle}" Content="Require Administrator (UAC prompt)" Margin="0,8,0,0"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionLabel}" Text="Install Context" Margin="0,0,0,6"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Default Context"/>
-                                <ComboBox x:Name="CboDefaultContext" Style="{StaticResource ModernComboBox}">
-                                    <ComboBoxItem Content="Machine"/>
-                                    <ComboBoxItem Content="User"/>
-                                </ComboBox>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionLabel}" Text="Target Directory" Margin="0,0,0,6"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Default Install Path"/>
-                                <TextBox x:Name="TxtDefaultPath" Style="{StaticResource FieldTextBox}" TextChanged="DefaultPath_TextChanged"/>
-                                <CheckBox x:Name="ChkAllowCustomPath" Style="{StaticResource FeatureToggle}" Content="Allow user to customize path"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionLabel}" Text="Installer Size" Margin="0,0,0,6"/>
-                                <CheckBox x:Name="ChkInstallerSize" Style="{StaticResource FeatureToggle}" Content="Set the size of the generated setup .exe"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Pads the generated installer EXE to the target size (0 MB up to 100 GB). The installer also verifies the target drive has enough free space before installing. Default is the smallest possible installer." FontStyle="Italic" Foreground="#888" TextWrapping="Wrap"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Drag for a quick size — fine megabyte control on the left, scaling up to gigabytes on the right." FontStyle="Italic" Foreground="#888" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                                <Slider x:Name="SldInstallerSize" Minimum="0" Maximum="100" Width="380" HorizontalAlignment="Left" Margin="0,4,0,4" ValueChanged="InstallerSizeSlider_Changed"/>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Exact size (MB)" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                    <TextBox x:Name="TxtInstallerSizeMB" Style="{StaticResource FieldTextBox}" Width="120" Text="0" TextChanged="InstallerSizeMB_Changed"/>
-                                    <TextBlock x:Name="LblInstallerSizeReadout" Foreground="#666" FontSize="12" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- Tab 2: Wizard Pages -->
-            <TabItem Header="Wizard Pages" Style="{StaticResource ModernTabItem}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,8">
-                    <StackPanel Margin="4,0">
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionLabel}" Text="Show/Hide Wizard Pages" Margin="0,0,0,6"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Toggle which pages appear in the simulated installer wizard." FontStyle="Italic" Foreground="#888"/>
-                                <CheckBox x:Name="ChkShowWelcome" Style="{StaticResource FeatureToggle}" Content="Welcome Page"/>
-                                <CheckBox x:Name="ChkShowEULA" Style="{StaticResource FeatureToggle}" Content="License Agreement (EULA)"/>
-                                <CheckBox x:Name="ChkShowInstallContext" Style="{StaticResource FeatureToggle}" Content="Install Context (Machine/User)"/>
-                                <CheckBox x:Name="ChkShowTargetDirectory" Style="{StaticResource FeatureToggle}" Content="Target Directory"/>
-                                <CheckBox x:Name="ChkShowComponents" Style="{StaticResource FeatureToggle}" Content="Component Selection"/>
-                                <CheckBox x:Name="ChkShowDesktopShortcut" Style="{StaticResource FeatureToggle}" Content="Desktop Shortcut Option"/>
-                                <CheckBox x:Name="ChkShowStartMenuPin" Style="{StaticResource FeatureToggle}" Content="Start Menu Pin Option"/>
-                                <CheckBox x:Name="ChkShowRebootOption" Style="{StaticResource FeatureToggle}" Content="Reboot Option"/>
-                                <CheckBox x:Name="ChkShowActiveSetup" Style="{StaticResource FeatureToggle}" Content="Active Setup Option"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionLabel}" Text="Wizard Page Defaults" Margin="0,0,0,6"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Pre-selected values when the wizard page is shown." FontStyle="Italic" Foreground="#888"/>
-                                <CheckBox x:Name="ChkDefaultDesktopShortcut" Style="{StaticResource FeatureToggle}" Content="Desktop shortcut enabled by default" IsChecked="True"/>
-                                <CheckBox x:Name="ChkDefaultStartMenuPin" Style="{StaticResource FeatureToggle}" Content="Start Menu pin enabled by default"/>
-                                <CheckBox x:Name="ChkDefaultActiveSetup" Style="{StaticResource FeatureToggle}" Content="Active Setup enabled by default"/>
-                                <CheckBox x:Name="ChkDefaultReboot" Style="{StaticResource FeatureToggle}" Content="Reboot prompt enabled by default"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Install context default is inherited from the General tab." FontStyle="Italic" Foreground="#999" Margin="0,4,0,0"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionLabel}" Text="EULA Text" Margin="0,0,0,6"/>
-                                <TextBox x:Name="TxtEULAText" Style="{StaticResource FieldTextBox}" TextWrapping="Wrap" AcceptsReturn="True" Height="100" VerticalScrollBarVisibility="Auto"/>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- Tab 3: Components -->
-            <TabItem Header="Components" Style="{StaticResource ModernTabItem}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,8">
-                    <StackPanel Margin="4,0">
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionLabel}" Text="Optional Components" Margin="0,0,0,6"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Define the selectable features the installer wizard presents to the user." FontStyle="Italic" Foreground="#888"/>
-                                <StackPanel x:Name="ComponentsList" Margin="0,8,0,0"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                    <TextBox x:Name="TxtNewComponent" Style="{StaticResource FieldTextBox}" Width="200" Margin="0,0,8,0"/>
-                                    <Button Content="+ Add Component" Style="{StaticResource SmallButton}" Click="AddComponent_Click"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- Tab 4: System Actions -->
-            <TabItem Header="System Actions" Style="{StaticResource ModernTabItem}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,8">
-                    <StackPanel Margin="4,0">
-                        <!-- Test Files -->
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <CheckBox x:Name="ChkTestFilesEnabled" Style="{StaticResource FeatureToggle}" Content="Test Files" FontWeight="SemiBold" FontSize="13" Foreground="#0078D4"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Create marker files during installation." FontStyle="Italic" Foreground="#888"/>
-                                <StackPanel x:Name="TestFilesList" Margin="0,6,0,0"/>
-                                <Button Content="+ Add Test File" Style="{StaticResource SmallButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddTestFile_Click"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Registry -->
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <CheckBox x:Name="ChkRegistryEnabled" Style="{StaticResource FeatureToggle}" Content="Registry Entries" FontWeight="SemiBold" FontSize="13" Foreground="#0078D4"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Write test registry entries during installation." FontStyle="Italic" Foreground="#888"/>
-                                <StackPanel x:Name="RegistryEntriesList" Margin="0,6,0,0"/>
-                                <Button Content="+ Add Registry Entry" Style="{StaticResource SmallButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddRegistryEntry_Click"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Shortcuts -->
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionLabel}" Text="Shortcuts" Margin="0,0,0,6"/>
-                                <CheckBox x:Name="ChkDesktopShortcut" Style="{StaticResource FeatureToggle}" Content="Create desktop shortcut"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Shortcut Name"/>
-                                <TextBox x:Name="TxtDesktopShortcutName" Style="{StaticResource FieldTextBox}"/>
-                                <CheckBox x:Name="ChkStartMenuEntry" Style="{StaticResource FeatureToggle}" Content="Create Start Menu entry"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Start Menu Folder"/>
-                                <TextBox x:Name="TxtStartMenuFolder" Style="{StaticResource FieldTextBox}" TextChanged="StartMenuFolder_TextChanged"/>
-                                <CheckBox x:Name="ChkPinToStartMenu" Style="{StaticResource FeatureToggle}" Content="Pin to Start Menu"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- File Associations -->
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <CheckBox x:Name="ChkFileAssociations" Style="{StaticResource FeatureToggle}" Content="File Associations" FontWeight="SemiBold" FontSize="13" Foreground="#0078D4"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Register file type associations." FontStyle="Italic" Foreground="#888"/>
-                                <StackPanel x:Name="FileAssociationsList" Margin="0,6,0,0"/>
-                                <Button Content="+ Add File Association" Style="{StaticResource SmallButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddFileAssociation_Click"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Context Menu -->
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <CheckBox x:Name="ChkContextMenu" Style="{StaticResource FeatureToggle}" Content="Context Menu Entries" FontWeight="SemiBold" FontSize="13" Foreground="#0078D4"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Add right-click shell menu entries." FontStyle="Italic" Foreground="#888"/>
-                                <StackPanel x:Name="ContextMenuList" Margin="0,6,0,0"/>
-                                <Button Content="+ Add Context Menu Entry" Style="{StaticResource SmallButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddContextMenu_Click"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Environment Variables -->
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <CheckBox x:Name="ChkEnvVars" Style="{StaticResource FeatureToggle}" Content="Environment Variables" FontWeight="SemiBold" FontSize="13" Foreground="#0078D4"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Set user or system environment variables." FontStyle="Italic" Foreground="#888"/>
-                                <StackPanel x:Name="EnvVarsList" Margin="0,6,0,0"/>
-                                <Button Content="+ Add Variable" Style="{StaticResource SmallButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddEnvVar_Click"/>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- Tab 5: Advanced -->
-            <TabItem Header="Advanced" Style="{StaticResource ModernTabItem}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,8">
-                    <StackPanel Margin="4,0">
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <CheckBox x:Name="ChkService" Style="{StaticResource FeatureToggle}" Content="Windows Service" FontWeight="SemiBold" FontSize="13" Foreground="#0078D4"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Service Name"/>
-                                <TextBox x:Name="TxtServiceName" Style="{StaticResource FieldTextBox}"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Display Name"/>
-                                <TextBox x:Name="TxtServiceDisplayName" Style="{StaticResource FieldTextBox}"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Start Type"/>
-                                <ComboBox x:Name="CboServiceStartType" Style="{StaticResource ModernComboBox}">
-                                    <ComboBoxItem Content="Automatic"/>
-                                    <ComboBoxItem Content="Manual" IsSelected="True"/>
-                                    <ComboBoxItem Content="Disabled"/>
-                                </ComboBox>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <CheckBox x:Name="ChkScheduledTask" Style="{StaticResource FeatureToggle}" Content="Scheduled Task" FontWeight="SemiBold" FontSize="13" Foreground="#0078D4"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Task Name"/>
-                                <TextBox x:Name="TxtTaskName" Style="{StaticResource FieldTextBox}"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Schedule"/>
-                                <ComboBox x:Name="CboTaskSchedule" Style="{StaticResource ModernComboBox}">
-                                    <ComboBoxItem Content="Daily" IsSelected="True"/>
-                                    <ComboBoxItem Content="Weekly"/>
-                                    <ComboBoxItem Content="AtLogon"/>
-                                    <ComboBoxItem Content="AtStartup"/>
-                                </ComboBox>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <CheckBox x:Name="ChkFirewall" Style="{StaticResource FeatureToggle}" Content="Firewall Rules" FontWeight="SemiBold" FontSize="13" Foreground="#0078D4"/>
-                                <StackPanel x:Name="FirewallRulesList" Margin="0,6,0,0"/>
-                                <Button Content="+ Add Firewall Rule" Style="{StaticResource SmallButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddFirewallRule_Click"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <CheckBox x:Name="ChkProtocolHandlers" Style="{StaticResource FeatureToggle}" Content="Protocol Handlers" FontWeight="SemiBold" FontSize="13" Foreground="#0078D4"/>
-                                <StackPanel x:Name="ProtocolHandlersList" Margin="0,6,0,0"/>
-                                <Button Content="+ Add Protocol" Style="{StaticResource SmallButton}" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddProtocolHandler_Click"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionLabel}" Text="Other Features" Margin="0,0,0,6"/>
-                                <CheckBox x:Name="ChkActiveSetup" Style="{StaticResource FeatureToggle}" Content="Register Active Setup component"/>
-                                <CheckBox x:Name="ChkAppPaths" Style="{StaticResource FeatureToggle}" Content="Register in App Paths (Run dialog)"/>
-                                <CheckBox x:Name="ChkStartup" Style="{StaticResource FeatureToggle}" Content="Add to Windows startup"/>
-                                <ComboBox x:Name="CboStartupMethod" Style="{StaticResource ModernComboBox}" Margin="20,0,0,0" Width="200" HorizontalAlignment="Left">
-                                    <ComboBoxItem Content="Registry" IsSelected="True"/>
-                                    <ComboBoxItem Content="StartupFolder"/>
-                                </ComboBox>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- Tab 6: Uninstall & Reboot -->
-            <TabItem Header="Uninstall" Style="{StaticResource ModernTabItem}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,8">
-                    <StackPanel Margin="4,0">
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionLabel}" Text="Uninstall Behavior" Margin="0,0,0,6"/>
-                                <CheckBox x:Name="ChkRegisterUninstaller" Style="{StaticResource FeatureToggle}" Content="Register in Add/Remove Programs"/>
-                                <CheckBox x:Name="ChkCleanFiles" Style="{StaticResource FeatureToggle}" Content="Clean files on uninstall"/>
-                                <CheckBox x:Name="ChkCleanRegistry" Style="{StaticResource FeatureToggle}" Content="Clean registry on uninstall"/>
-                                <CheckBox x:Name="ChkCleanShortcuts" Style="{StaticResource FeatureToggle}" Content="Clean shortcuts on uninstall"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionLabel}" Text="Intentional Leftovers" Margin="0,0,0,6"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="For testing incomplete uninstall detection." FontStyle="Italic" Foreground="#888"/>
-                                <CheckBox x:Name="ChkLeaveFiles" Style="{StaticResource FeatureToggle}" Content="Leave files behind after uninstall"/>
-                                <TextBox x:Name="TxtLeftoverFiles" Style="{StaticResource FieldTextBox}" TextWrapping="Wrap"/>
-                                <CheckBox x:Name="ChkLeaveRegistry" Style="{StaticResource FeatureToggle}" Content="Leave registry entries behind after uninstall"/>
-                                <TextBox x:Name="TxtLeftoverRegistry" Style="{StaticResource FieldTextBox}" TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionLabel}" Text="Reboot Behavior" Margin="0,0,0,6"/>
-                                <CheckBox x:Name="ChkPromptReboot" Style="{StaticResource FeatureToggle}" Content="Prompt for reboot after installation"/>
-                                <CheckBox x:Name="ChkForceReboot" Style="{StaticResource FeatureToggle}" Content="Force reboot (use with caution!)"/>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- Tab 7: UI & Timing -->
-            <TabItem Header="UI" Style="{StaticResource ModernTabItem}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,8">
-                    <StackPanel Margin="4,0">
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionLabel}" Text="Installer Colors" Margin="0,0,0,6"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Banner Color"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                    <Border x:Name="BannerColorPreview" Width="28" Height="28" Background="#0078D4"
-                                            BorderBrush="#CCC" BorderThickness="1" CornerRadius="4" Margin="0,0,8,0"
-                                            Cursor="Hand" MouseLeftButtonUp="BannerColorPicker_Click"/>
-                                    <TextBox x:Name="TxtBannerColor" Style="{StaticResource FieldTextBox}" Width="120"
-                                             TextChanged="BannerColor_TextChanged"/>
-                                </StackPanel>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Accent Color"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                    <Border x:Name="AccentColorPreview" Width="28" Height="28" Background="#106EBE"
-                                            BorderBrush="#CCC" BorderThickness="1" CornerRadius="4" Margin="0,0,8,0"
-                                            Cursor="Hand" MouseLeftButtonUp="AccentColorPicker_Click"/>
-                                    <TextBox x:Name="TxtAccentColor" Style="{StaticResource FieldTextBox}" Width="120"
-                                             TextChanged="AccentColor_TextChanged"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionLabel}" Text="Install Progress" Margin="0,0,0,6"/>
-                                <CheckBox x:Name="ChkShowProgressBar" Style="{StaticResource FeatureToggle}" Content="Show progress bar during install"/>
-                                <CheckBox x:Name="ChkSimulateDelay" Style="{StaticResource FeatureToggle}" Content="Simulate install delay"/>
-                                <TextBlock Style="{StaticResource FieldLabel}" Text="Delay per step (seconds)"/>
-                                <TextBox x:Name="TxtDelaySec" Style="{StaticResource FieldTextBox}" Width="80" HorizontalAlignment="Left" Text="0.5"/>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-        </TabControl>
-
-        <!-- Footer -->
-        <Border Grid.Row="3" Background="White" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Padding="15,10">
-            <Grid>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
-                    <TextBlock FontSize="11" Foreground="#999" VerticalAlignment="Center">
-                        <Run Text="TestPackage by "/>
-                        <Hyperlink NavigateUri="https://rwksystems.com" RequestNavigate="Hyperlink_Navigate" Foreground="#0078D4">RWK Systems</Hyperlink>
-                    </TextBlock>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Button Content="Load Config" Style="{StaticResource SmallButton}" Margin="4,0" Click="LoadConfig_Click"/>
-                    <Button Content="Save Config" Style="{StaticResource SmallButton}" Margin="4,0" Click="SaveConfig_Click"/>
-                    <Button Content="Preview" Style="{StaticResource SmallButton}" Margin="4,0" Click="Preview_Click"/>
-                    <Button Content="Generate Installer" Style="{StaticResource PrimaryButton}" Margin="4,0" Click="GenerateInstaller_Click"/>
-                </StackPanel>
+                <TextBlock Grid.Column="0" Style="{StaticResource MutedText}" VerticalAlignment="Center">
+                    TestPackage · a design tool by RWK Systems ·
+                    <Hyperlink NavigateUri="https://rwksystems.com" RequestNavigate="Hyperlink_Navigate" Foreground="{StaticResource AccentDeepBrush}">rwksystems.com</Hyperlink>
+                </TextBlock>
+                <Button Grid.Column="1" Content="Generate installer" Style="{StaticResource PrimaryButton}" Click="GenerateInstaller_Click"/>
             </Grid>
         </Border>
     </Grid>
