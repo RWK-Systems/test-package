@@ -38,7 +38,7 @@ namespace TestPackage.Core
             _manifest.InstalledBy = $@"{Environment.UserDomainName}\{Environment.UserName}";
             _manifest.InstallDate = DateTime.Now;
             _manifest.AppName = _config.Get("General", "AppName", "TestPackage");
-            _manifest.AppVersion = _config.Get("General", "AppVersion", "2.5.1");
+            _manifest.AppVersion = _config.Get("General", "AppVersion", "3.0.0");
             _manifest.AppGUID = _config.Get("General", "AppGUID");
             _manifest.Components = selectedComponents;
             _manifest.DesktopShortcut = desktopShortcut;
@@ -169,7 +169,7 @@ namespace TestPackage.Core
         {
             var sb = new System.Text.StringBuilder();
             var appName = _config.Get("General", "AppName", "TestPackage");
-            var appVersion = _config.Get("General", "AppVersion", "2.5.1");
+            var appVersion = _config.Get("General", "AppVersion", "3.0.0");
 
             sb.AppendLine($"{appName} v{appVersion}");
             sb.AppendLine(new string('=', 60));
@@ -791,7 +791,7 @@ namespace TestPackage.Core
         private void RegisterUninstaller(string installDir)
         {
             var appName = _config.Get("General", "AppName", "TestPackage");
-            var appVersion = _config.Get("General", "AppVersion", "2.5.1");
+            var appVersion = _config.Get("General", "AppVersion", "3.0.0");
             var publisher = _config.Get("General", "AppPublisher", "RWK Systems");
             var guid = _config.Get("General", "AppGUID");
             var exePath = Path.Combine(installDir, AppExeName);

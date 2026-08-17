@@ -11,11 +11,11 @@ namespace TestPackage.Core
     {
         // General
         public string AppName { get; set; } = "My Test Package";
-        public string AppVersion { get; set; } = "2.5.1";
+        public string AppVersion { get; set; } = "3.0.0";
         public string AppPublisher { get; set; } = "Your Mom";
         public string AppURL { get; set; } = "https://stupidapps.com";
         public string AppGUID { get; set; } = "{E8A3B025-7F4D-4B1A-9C6E-2D8F5A1B3C4D}";
-        public bool RequireAdmin { get; set; }
+        public bool RequireAdmin { get; set; } = true;
         public string AppExeName { get; set; } = "TestSetupAuditViewer.exe";
         public string InstallerExeName { get; set; } = "YourSimulatedSetup.exe";
 
@@ -56,7 +56,7 @@ namespace TestPackage.Core
 
         // Registry
         public bool RegistryEnabled { get; set; } = true;
-        public string RegistryEntries { get; set; } = @"HKCU\Software\RWK Systems\TestPackage|InstallDate|REG_SZ|%DATE%,HKCU\Software\RWK Systems\TestPackage|Version|REG_SZ|2.5.1,HKLM\Software\RWK Systems\TestPackage|InstallPath|REG_SZ|%InstallDir%";
+        public string RegistryEntries { get; set; } = @"HKCU\Software\RWK Systems\TestPackage|InstallDate|REG_SZ|%DATE%,HKCU\Software\RWK Systems\TestPackage|Version|REG_SZ|3.0.0,HKLM\Software\RWK Systems\TestPackage|InstallPath|REG_SZ|%InstallDir%";
 
         // Shortcuts
         public bool CreateDesktopShortcut { get; set; } = true;
@@ -75,7 +75,7 @@ namespace TestPackage.Core
 
         // Environment Variables
         public bool EnvironmentVariablesEnabled { get; set; }
-        public string EnvironmentVariables { get; set; } = @"User|TESTPACKAGE_HOME|%InstallDir%,User|TESTPACKAGE_VERSION|2.5.1";
+        public string EnvironmentVariables { get; set; } = @"User|TESTPACKAGE_HOME|%InstallDir%,User|TESTPACKAGE_VERSION|3.0.0";
 
         // Services
         public bool ServicesEnabled { get; set; }

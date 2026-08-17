@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (without leading v). E.g. 3.0.0-alpha.1'
+        description: 'Version to release (without leading v). E.g. 3.0.1 or 3.1.0-beta.1'
         required: true
         type: string
 
@@ -155,16 +155,22 @@ jobs:
 
           Design and generate simulated installers for testing repackaging, application virtualization, and deployment solutions.
 
-          ### v3 in progress
+          ### What's new in v3
 
-          Pre-release builds (`vX.Y.Z-alpha.N`) are UX-revamp iterations of the Configurator. They install alongside the stable v2.5 line by upgrading the same registered product; use the stable release (marked "Latest") for regular workflows. Highlights across v3 so far:
+          - **Single-screen Configurator.** The 7-tab layout is gone; identity, wizard, install actions, uninstall, appearance and package settings all live on one canvas.
+          - **Live "receipt" rail.** A summary on the right side updates as you edit — behaviors enabled, installer size, elevation, install directory, and a one-line description of what the generated installer will do.
+          - **Frame navigation tiles.** Six tiles across the top of the workspace; click one to jump to that section, and the currently-visible section is highlighted as you scroll.
+          - **Presets.** Start from Blank, Typical desktop app, Service + firewall, or Enterprise. Applying a preset replaces the install-action behaviors and their sample data while leaving your identity, wizard pages and uninstall settings alone.
+          - **Composite editors.** Registry entries, environment variables, firewall rules, file associations, context menu entries, protocol handlers and test files each now get a proper master-list + detail-form overlay in place of the inline pipe-format row grids.
+          - **Code signing option.** Sign the generated installer with your own PFX (via `signtool.exe` if available on PATH / Windows Kits, or PowerShell `Set-AuthenticodeSignature` as a fallback); leave the mode as "None" to ship it unsigned.
+          - **Configurable installer size.** Pad the generated setup .exe up to 100 GB with a non-linear slider + exact MB entry, to test how repackaging and virtualization tools handle large installers. Install-time disk-space check runs against the requested size.
+          - **Auto-derived defaults.** Default install path and Start Menu folder follow `<Publisher>\<AppName>` live as you type. Type your own to opt out; clear the field to re-derive.
+          - **Modernist visual system.** Flat, architectural, single accent (`#EC3013`), 2px rules, zero corner radius.
+          - **Elevation by default.** New installers request administrator privileges by default (matches the reality of Program Files and HKLM writes). Uncheck "Require Administrator" in the Identity frame for user-scope installers.
+          - **New defaults:** installer .exe name auto-dated (`TestPackage_DDMMMYY.exe`), installed-payload .exe name reads `TestSetupAuditViewer.exe` (matches the "audit viewer" copy).
+          - Carried forward from v2: silent install with command-line overrides (`/S`, `/D=`, `/context=`, `/components=`), configurable app metadata, custom EULA, banner and accent colors, disk-space prerequisite check.
 
-          - **Single-screen Configurator** — the 7-tab layout is gone; identity, wizard, install actions, uninstall, appearance and package settings all live on one canvas, with a live "receipt" rail showing the footprint your generated installer will leave.
-          - **Presets** — start from Blank, Typical desktop app, Service + firewall, or Enterprise; presets replace install-action behaviors + sample data while leaving your identity/wizard/uninstall settings alone.
-          - **Modernist visual system** — flat, architectural, single accent, 2px rules, zero corner radius.
-          - Carried forward from v2.5.1: configurable installer size (non-linear slider + MB), disk-space check, derived install path & Start Menu folder, silent install with command-line overrides.
-
-          The composite-field editor overlay (registry / env vars / firewall / etc.) and full visual polish arrive in later alpha builds.
+          Existing v2 configuration files (`config.ini`) load unchanged; nothing in the config schema was removed.
 
           ### Download
 
@@ -175,8 +181,6 @@ jobs:
           ```
           winget install RWKSystems.TestPackage
           ```
-
-          winget tracks the stable release; use the download link above for pre-release alpha builds.
 
           ### SHA256
           ```
