@@ -168,7 +168,7 @@ jobs:
 
           ### Download
 
-          **[TestPackageSetup.exe](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.TAG }}/TestPackageSetup.exe)** — Self-contained installer (no .NET runtime required)
+          **[TestPackageSetup.exe](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.TAG }}/TestPackageSetup.exe)** — a standalone Windows installer. The .NET 8 runtime is bundled inside the .exe, so nothing else needs to be installed first — just download and run.
 
           ### Install via winget
 
