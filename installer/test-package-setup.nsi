@@ -9,7 +9,7 @@
 
 ; --- Product Info ---
 !define PRODUCT_NAME "TestPackage"
-!define PRODUCT_VERSION "3.0.0-alpha.3"
+!define PRODUCT_VERSION "3.0.0-alpha.4"
 !define PRODUCT_PUBLISHER "RWK Systems"
 !define PRODUCT_WEB_SITE "https://rwksystems.com"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\TestPackageConfigurator.exe"

@@ -16,7 +16,7 @@ namespace TestPackage.Core
         public string AppURL { get; set; } = "https://stupidapps.com";
         public string AppGUID { get; set; } = "{E8A3B025-7F4D-4B1A-9C6E-2D8F5A1B3C4D}";
         public bool RequireAdmin { get; set; }
-        public string AppExeName { get; set; } = "YourSimulatedApp.exe";
+        public string AppExeName { get; set; } = "TestSetupAuditViewer.exe";
         public string InstallerExeName { get; set; } = "YourSimulatedSetup.exe";
 
         // Wizard Pages
@@ -145,6 +145,16 @@ namespace TestPackage.Core
         public bool InstallerSizeEnabled { get; set; }
         public int InstallerSizeMB { get; set; }
 
+        // Code Signing
+        // Configurator-time signing of the generated installer .exe. Mode
+        // is "None" (unsigned, default) or "PFX" (sign with a .pfx via
+        // signtool or PowerShell Set-AuthenticodeSignature). Signing runs
+        // after size padding so the signature covers the padded file.
+        public string CodeSigningMode { get; set; } = "None";
+        public string CodeSigningPfxPath { get; set; } = "";
+        public string CodeSigningPfxPassword { get; set; } = "";
+        public string CodeSigningTimestampUrl { get; set; } = "http://timestamp.digicert.com";
+
         /// <summary>Largest installer padding size that can be requested (100 GB, in MB).</summary>
         public const int MaxInstallerSizeMB = 102400;
 
@@ -263,6 +273,11 @@ namespace TestPackage.Core
 
             m.InstallerSizeEnabled = config.GetBool("InstallerSize", "Enabled");
             m.InstallerSizeMB = config.GetInt("InstallerSize", "SizeMB", 0);
+
+            m.CodeSigningMode         = config.Get("CodeSigning", "Mode",         m.CodeSigningMode);
+            m.CodeSigningPfxPath      = config.Get("CodeSigning", "PfxPath",      m.CodeSigningPfxPath);
+            m.CodeSigningPfxPassword  = config.Get("CodeSigning", "PfxPassword",  m.CodeSigningPfxPassword);
+            m.CodeSigningTimestampUrl = config.Get("CodeSigning", "TimestampUrl", m.CodeSigningTimestampUrl);
 
             m.BannerColor = config.Get("UI", "BannerColor", m.BannerColor);
             m.AccentColor = config.Get("UI", "AccentColor", m.AccentColor);

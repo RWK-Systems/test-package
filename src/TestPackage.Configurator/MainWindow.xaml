@@ -74,10 +74,11 @@
 
         <!-- ================= Frame navigation tiles ================= -->
         <!-- Six section tiles across the top of the workspace; clicking one
-             scrolls the left column to that frame's card. -->
+             scrolls the left column to that frame's card. The currently-
+             visible frame's tile is highlighted based on scroll position. -->
         <Border Grid.Row="3" Background="{StaticResource BgBrush}" BorderBrush="{StaticResource InkBrush}" BorderThickness="0,0,0,2">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Padding="24,10">
-                <StackPanel Orientation="Horizontal">
+                <StackPanel x:Name="FrameTilesPanel" Orientation="Horizontal">
                     <Button Style="{StaticResource FrameTile}" Tag="Identity"       Click="FrameTile_Click">
                         <StackPanel>
                             <TextBlock Style="{StaticResource FrameTileEyebrow}" Text="01"/>
@@ -132,8 +133,9 @@
             </Grid.ColumnDefinitions>
 
             <!-- Frames column -->
-            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Padding="24,20,16,20">
-                <StackPanel>
+            <ScrollViewer x:Name="FramesScroll" Grid.Column="0" VerticalScrollBarVisibility="Auto" Padding="24,20,16,20"
+                          ScrollChanged="FramesScroll_ScrollChanged">
+                <StackPanel x:Name="FramesStack">
 
                     <!-- ===== Frame 01 — Identity ===== -->
                     <Border x:Name="FrameIdentity" Style="{StaticResource Card}">
@@ -462,6 +464,41 @@
 
                             <TextBlock Style="{StaticResource MutedText}" Margin="0,10,0,0" TextWrapping="Wrap"
                                        Text="Silent install (/S) and command-line overrides are built in — see README for switches."/>
+
+                            <Border Style="{StaticResource LightRule}"/>
+
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="CODE SIGNING"/>
+                            <TextBlock Style="{StaticResource MutedText}" TextWrapping="Wrap"
+                                       Text="Sign the generated installer .exe with your own certificate. Leave 'None' to ship unsigned (Windows will show a SmartScreen 'unknown publisher' warning to end-users)."/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="MODE"/>
+                            <ComboBox x:Name="CboCodeSigningMode" Style="{StaticResource ModernComboBox}" Width="220" HorizontalAlignment="Left"
+                                      SelectionChanged="CodeSigningMode_Changed">
+                                <ComboBoxItem Content="None"/>
+                                <ComboBoxItem Content="PFX"/>
+                            </ComboBox>
+
+                            <StackPanel x:Name="PnlSigningPfxDetails" Margin="0,8,0,0">
+                                <TextBlock Style="{StaticResource FieldLabel}" Text="PFX FILE"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0" x:Name="TxtCodeSigningPfxPath" Style="{StaticResource MonoTextBox}"/>
+                                    <Button Grid.Column="1" Content="Browse…" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Click="BrowsePfx_Click"/>
+                                </Grid>
+
+                                <TextBlock Style="{StaticResource FieldLabel}" Text="PFX PASSWORD"/>
+                                <PasswordBox x:Name="PwbCodeSigningPassword" FontFamily="{StaticResource MonoFont}" FontSize="13"
+                                             Padding="8,6" BorderBrush="{StaticResource InkBrush}" BorderThickness="1" Background="White"/>
+                                <TextBlock Style="{StaticResource MutedText}" TextWrapping="Wrap"
+                                           Text="Note: the password is written to config.ini in plaintext when you Save Config. Fine for local test scenarios; not fine for anything a third party sees."/>
+
+                                <TextBlock Style="{StaticResource FieldLabel}" Text="TIMESTAMP URL"/>
+                                <TextBox x:Name="TxtCodeSigningTimestamp" Style="{StaticResource MonoTextBox}"/>
+                                <TextBlock Style="{StaticResource MutedText}" TextWrapping="Wrap"
+                                           Text="RFC 3161 timestamp server. Default is DigiCert's free timestamp URL — override if your cert vendor requires something specific."/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 

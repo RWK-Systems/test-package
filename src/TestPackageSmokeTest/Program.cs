@@ -275,8 +275,12 @@ namespace TestPackageSmokeTest
                 Check("EnvironmentVariables",    m1.EnvironmentVariables,    m2.EnvironmentVariables);
                 Check("FirewallRules",           m1.FirewallRules,           m2.FirewallRules);
                 Check("ProtocolHandlers",        m1.ProtocolHandlers,        m2.ProtocolHandlers);
-                Check("InstallerSizeEnabled",   m1.InstallerSizeEnabled,   m2.InstallerSizeEnabled);
-                Check("InstallerSizeMB",         m1.InstallerSizeMB,         m2.InstallerSizeMB);
+                Check("InstallerSizeEnabled",     m1.InstallerSizeEnabled,     m2.InstallerSizeEnabled);
+                Check("InstallerSizeMB",           m1.InstallerSizeMB,           m2.InstallerSizeMB);
+                Check("CodeSigningMode",           m1.CodeSigningMode,           m2.CodeSigningMode);
+                Check("CodeSigningPfxPath",        m1.CodeSigningPfxPath,        m2.CodeSigningPfxPath);
+                Check("CodeSigningPfxPassword",    m1.CodeSigningPfxPassword,    m2.CodeSigningPfxPassword);
+                Check("CodeSigningTimestampUrl",   m1.CodeSigningTimestampUrl,   m2.CodeSigningTimestampUrl);
                 Check("Components.Count",        m1.Components.Count,        m2.Components.Count);
                 for (int i = 0; i < Math.Min(m1.Components.Count, m2.Components.Count); i++)
                 {

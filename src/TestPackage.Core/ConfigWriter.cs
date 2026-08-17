@@ -166,6 +166,13 @@ namespace TestPackage.Core
             sb.AppendLine($"SizeMB={m.InstallerSizeMB}");
             sb.AppendLine();
 
+            sb.AppendLine("[CodeSigning]");
+            sb.AppendLine($"Mode={m.CodeSigningMode}");
+            sb.AppendLine($"PfxPath={m.CodeSigningPfxPath}");
+            sb.AppendLine($"PfxPassword={m.CodeSigningPfxPassword}");
+            sb.AppendLine($"TimestampUrl={m.CodeSigningTimestampUrl}");
+            sb.AppendLine();
+
             sb.AppendLine("[UI]");
             sb.AppendLine($"BannerColor={m.BannerColor}");
             sb.AppendLine($"AccentColor={m.AccentColor}");

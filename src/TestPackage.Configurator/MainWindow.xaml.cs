@@ -23,9 +23,22 @@ namespace TestPackage.Configurator
             InitializeComponent();
             ClampToScreen();
             TxtOutputFolder.Text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            // Seed a fresh, dated installer name each session (users typically
+            // want the date in the filename so multiple test builds don't
+            // collide). Overriding here rather than baking into ConfigModel so
+            // the smoke test and other Core consumers keep their stable value.
+            _model.InstallerExeName = ComputeDatedInstallerName();
             InitCompositeSchemas();
             PopulateFromModel(_model);
             StartReceiptTimer();
+            // First selected-tile paint after layout so TranslatePoint works.
+            Dispatcher.BeginInvoke(new Action(UpdateSelectedTileFromScroll), DispatcherPriority.Loaded);
+        }
+
+        private static string ComputeDatedInstallerName()
+        {
+            var stamp = DateTime.Now.ToString("ddMMMyy", System.Globalization.CultureInfo.InvariantCulture).ToUpperInvariant();
+            return $"TestPackage_{stamp}.exe";
         }
 
         private void ClampToScreen()
@@ -122,6 +135,13 @@ namespace TestPackage.Configurator
             ChkSimulateDelay.IsChecked   = m.SimulateInstallDelay;
             TxtDelaySec.Text = (m.InstallDelayMs / 1000.0).ToString("0.###");
 
+            SelectComboItem(CboCodeSigningMode, string.IsNullOrWhiteSpace(m.CodeSigningMode) ? "None" : m.CodeSigningMode);
+            TxtCodeSigningPfxPath.Text     = m.CodeSigningPfxPath ?? "";
+            PwbCodeSigningPassword.Password = m.CodeSigningPfxPassword ?? "";
+            TxtCodeSigningTimestamp.Text   = string.IsNullOrWhiteSpace(m.CodeSigningTimestampUrl)
+                ? "http://timestamp.digicert.com" : m.CodeSigningTimestampUrl;
+            UpdateSigningPanelVisibility();
+
             LoadCompositesFromModel(m);
         }
 
@@ -203,6 +223,12 @@ namespace TestPackage.Configurator
             m.SimulateInstallDelay = ChkSimulateDelay.IsChecked == true;
             m.InstallDelayMs = double.TryParse(TxtDelaySec.Text, out var sec) ? (int)(sec * 1000) : 500;
             m.AppPathsExeName = m.AppExeName;
+
+            m.CodeSigningMode         = GetComboText(CboCodeSigningMode);
+            if (string.IsNullOrWhiteSpace(m.CodeSigningMode)) m.CodeSigningMode = "None";
+            m.CodeSigningPfxPath      = TxtCodeSigningPfxPath.Text.Trim();
+            m.CodeSigningPfxPassword  = PwbCodeSigningPassword.Password;
+            m.CodeSigningTimestampUrl = TxtCodeSigningTimestamp.Text.Trim();
 
             SaveCompositesToModel(m);
             return m;
@@ -299,12 +325,24 @@ namespace TestPackage.Configurator
                     }
                 }
 
+                // Code signing (after padding so the signature covers the padded file).
+                // On None, the template's original signature is already invalidated by
+                // padding, so the generated installer ships unsigned.
+                var signNote = "\n\nSigned as: unsigned (template signature invalidated by padding)";
+                if (model.CodeSigningMode.Equals("PFX", StringComparison.OrdinalIgnoreCase))
+                {
+                    var (ok, msg) = SignInstaller(installerExePath, model);
+                    signNote = ok
+                        ? $"\n\nSigned with your PFX via {msg}"
+                        : $"\n\nSigning failed — installer is unsigned:\n{msg}";
+                }
+
                 if (File.Exists(appTemplate))
                     File.Copy(appTemplate, Path.Combine(dataFolder, model.AppExeName), true);
                 File.WriteAllText(Path.Combine(dataFolder, "config.ini"), ConfigWriter.Write(model));
 
                 MessageBox.Show(
-                    $"Installer generated!\n\n{packageFolder}\\{model.InstallerExeName}{sizeNote}\n\n" +
+                    $"Installer generated!\n\n{packageFolder}\\{model.InstallerExeName}{sizeNote}{signNote}\n\n" +
                     "Run this EXE to test your packaging workflow.",
                     "TestPackage", MessageBoxButton.OK, MessageBoxImage.Information);
                 Process.Start(new ProcessStartInfo { FileName = packageFolder, UseShellExecute = true });
@@ -605,17 +643,213 @@ namespace TestPackage.Configurator
         private void FrameTile_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button b || b.Tag is not string key) return;
-            FrameworkElement? target = key switch
+            ScrollToFrame(FrameByKey(key));
+            UpdateSelectedTile(key);
+        }
+
+        private FrameworkElement? FrameByKey(string key) => key switch
+        {
+            "Identity"       => FrameIdentity,
+            "Wizard"         => FrameWizard,
+            "InstallActions" => FrameInstallActions,
+            "Uninstall"      => FrameUninstall,
+            "Appearance"     => FrameAppearance,
+            "Package"        => FramePackage,
+            _ => null
+        };
+
+        // Scroll the frames column so the target frame's top sits near the
+        // top of the viewport. BringIntoView() only guarantees visibility,
+        // which lands mid-frame if you were already scrolled down in the
+        // previous frame — this puts the frame heading at the top.
+        private void ScrollToFrame(FrameworkElement? target)
+        {
+            if (target == null || FramesScroll == null) return;
+            var content = FramesScroll.Content as UIElement;
+            if (content == null) return;
+            try
             {
-                "Identity"       => FrameIdentity,
-                "Wizard"         => FrameWizard,
-                "InstallActions" => FrameInstallActions,
-                "Uninstall"      => FrameUninstall,
-                "Appearance"     => FrameAppearance,
-                "Package"        => FramePackage,
-                _ => null
+                var y = target.TranslatePoint(new System.Windows.Point(0, 0), content).Y;
+                FramesScroll.ScrollToVerticalOffset(Math.Max(0, y - 12));
+            }
+            catch { /* pre-layout call; a later ScrollChanged will resync */ }
+        }
+
+        // As the user scrolls, the tile matching whichever frame is currently
+        // at the top of the viewport lights up.
+        private void FramesScroll_ScrollChanged(object sender, System.Windows.Controls.ScrollChangedEventArgs e)
+            => UpdateSelectedTileFromScroll();
+
+        private void UpdateSelectedTileFromScroll()
+        {
+            if (FramesScroll == null || FramesScroll.Content is not UIElement content) return;
+            var scrollY = FramesScroll.VerticalOffset;
+            var threshold = scrollY + 40;   // a tile "activates" once its top has scrolled past 40px into the viewport
+            var frames = new (string key, FrameworkElement? el)[]
+            {
+                ("Identity",       FrameIdentity),
+                ("Wizard",         FrameWizard),
+                ("InstallActions", FrameInstallActions),
+                ("Uninstall",      FrameUninstall),
+                ("Appearance",     FrameAppearance),
+                ("Package",        FramePackage),
             };
-            target?.BringIntoView();
+            string current = "Identity";
+            foreach (var (key, el) in frames)
+            {
+                if (el == null) continue;
+                try
+                {
+                    var y = el.TranslatePoint(new System.Windows.Point(0, 0), content).Y;
+                    if (y <= threshold) current = key;
+                }
+                catch { }
+            }
+            UpdateSelectedTile(current);
+        }
+
+        private void UpdateSelectedTile(string current)
+        {
+            if (FrameTilesPanel == null) return;
+            var accent    = (Brush)FindResource("AccentBrush");
+            var accentTint = (Brush)FindResource("AccentTintBrush");
+            var ink       = (Brush)FindResource("InkBrush");
+            foreach (var child in FrameTilesPanel.Children)
+            {
+                if (child is Button btn && btn.Tag is string tag)
+                {
+                    var selected = tag == current;
+                    btn.BorderBrush = selected ? accent : ink;
+                    btn.BorderThickness = selected ? new Thickness(2) : new Thickness(1);
+                    btn.Background = selected ? accentTint : Brushes.White;
+                }
+            }
+        }
+
+        // ===== Code signing =====
+
+        private void CodeSigningMode_Changed(object sender, SelectionChangedEventArgs e)
+            => UpdateSigningPanelVisibility();
+
+        private void UpdateSigningPanelVisibility()
+        {
+            if (PnlSigningPfxDetails == null) return;
+            var mode = GetComboText(CboCodeSigningMode);
+            PnlSigningPfxDetails.Visibility = mode.Equals("PFX", StringComparison.OrdinalIgnoreCase)
+                ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void BrowsePfx_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "PFX certificate (*.pfx)|*.pfx|All files (*.*)|*.*",
+                Title  = "Select .pfx certificate"
+            };
+            if (!string.IsNullOrEmpty(TxtCodeSigningPfxPath.Text)
+                && File.Exists(TxtCodeSigningPfxPath.Text))
+                dialog.InitialDirectory = Path.GetDirectoryName(TxtCodeSigningPfxPath.Text);
+            if (dialog.ShowDialog() == true)
+                TxtCodeSigningPfxPath.Text = dialog.FileName;
+        }
+
+        // Attempts signtool.exe first (better output), falls back to PowerShell
+        // Set-AuthenticodeSignature. Returns (success, message describing method
+        // or the error output).
+        private static (bool ok, string message) SignInstaller(string exePath, ConfigModel m)
+        {
+            if (string.IsNullOrWhiteSpace(m.CodeSigningPfxPath))
+                return (false, "no PFX path set");
+            if (!File.Exists(m.CodeSigningPfxPath))
+                return (false, $"PFX not found: {m.CodeSigningPfxPath}");
+
+            var signtool = FindSigntool();
+            if (signtool != null)
+            {
+                var args = $"sign /fd SHA256 /td SHA256 /tr \"{m.CodeSigningTimestampUrl}\" " +
+                           $"/f \"{m.CodeSigningPfxPath}\" /p \"{m.CodeSigningPfxPassword}\" " +
+                           $"\"{exePath}\"";
+                var (exit, so, se) = RunCapture(signtool, args, null);
+                if (exit == 0) return (true, "signtool");
+                var detail = string.IsNullOrWhiteSpace(se) ? so : se;
+                return (false, $"signtool failed (exit {exit}):\n{detail.Trim()}");
+            }
+
+            // PowerShell fallback. Pass password via env var to avoid quoting
+            // pitfalls, and 'exit $LASTEXITCODE'-style propagate signing errors.
+            var script =
+                "$ErrorActionPreference='Stop';" +
+                "$pw = ConvertTo-SecureString -String $env:_TP_PFXPW -AsPlainText -Force;" +
+                $"$cert = Get-PfxCertificate -FilePath '{m.CodeSigningPfxPath.Replace("'", "''")}' -Password $pw;" +
+                $"$r = Set-AuthenticodeSignature -FilePath '{exePath.Replace("'", "''")}' -Certificate $cert " +
+                $" -TimestampServer '{m.CodeSigningTimestampUrl.Replace("'", "''")}' -HashAlgorithm SHA256;" +
+                "if ($r.Status -ne 'Valid') { Write-Error $r.StatusMessage; exit 1 }";
+            var env = new Dictionary<string, string?> { ["_TP_PFXPW"] = m.CodeSigningPfxPassword };
+            var (pxExit, pxOut, pxErr) = RunCapture("powershell.exe",
+                $"-NoProfile -ExecutionPolicy Bypass -Command \"{script.Replace("\"", "\\\"")}\"",
+                env);
+            if (pxExit == 0) return (true, "PowerShell Set-AuthenticodeSignature");
+            var pxDetail = string.IsNullOrWhiteSpace(pxErr) ? pxOut : pxErr;
+            return (false, $"PowerShell signing failed (exit {pxExit}):\n{pxDetail.Trim()}");
+        }
+
+        private static string? FindSigntool()
+        {
+            // Try `where signtool` first (respects PATH)
+            try
+            {
+                var (exit, so, _) = RunCapture("where.exe", "signtool.exe", null);
+                if (exit == 0)
+                {
+                    var first = so.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
+                    if (!string.IsNullOrEmpty(first) && File.Exists(first)) return first;
+                }
+            }
+            catch { }
+
+            // Fall back to common Windows Kits locations
+            var kits = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+            if (!string.IsNullOrEmpty(kits))
+            {
+                var binDir = Path.Combine(kits, "Windows Kits", "10", "bin");
+                if (Directory.Exists(binDir))
+                {
+                    foreach (var arch in new[] { "x64", "x86" })
+                    {
+                        foreach (var version in Directory.EnumerateDirectories(binDir)
+                                                        .Select(Path.GetFileName)
+                                                        .OrderByDescending(n => n ?? ""))
+                        {
+                            if (version == null) continue;
+                            var candidate = Path.Combine(binDir, version, arch, "signtool.exe");
+                            if (File.Exists(candidate)) return candidate;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        private static (int exit, string stdOut, string stdErr) RunCapture(string file, string args,
+            IDictionary<string, string?>? extraEnv)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = file,
+                Arguments = args,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            if (extraEnv != null)
+                foreach (var kv in extraEnv) psi.EnvironmentVariables[kv.Key] = kv.Value;
+            using var p = Process.Start(psi);
+            if (p == null) return (-1, "", $"failed to start {file}");
+            var so = p.StandardOutput.ReadToEnd();
+            var se = p.StandardError.ReadToEnd();
+            p.WaitForExit(120_000);
+            return (p.ExitCode, so, se);
         }
 
         // ===== Presets =====
