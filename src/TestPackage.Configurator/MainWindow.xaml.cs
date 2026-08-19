@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Navigation;
+using System.Windows.Threading;
 using TestPackage.Core;
 
 namespace TestPackage.Configurator
@@ -20,350 +23,29 @@ namespace TestPackage.Configurator
             InitializeComponent();
             ClampToScreen();
             TxtOutputFolder.Text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            // Seed a fresh, dated installer name each session (users typically
+            // want the date in the filename so multiple test builds don't
+            // collide). Overriding here rather than baking into ConfigModel so
+            // the smoke test and other Core consumers keep their stable value.
+            _model.InstallerExeName = ComputeDatedInstallerName();
+            InitCompositeSchemas();
             PopulateFromModel(_model);
+            StartReceiptTimer();
+            // First selected-tile paint after layout so TranslatePoint works.
+            Dispatcher.BeginInvoke(new Action(UpdateSelectedTileFromScroll), DispatcherPriority.Loaded);
+        }
+
+        private static string ComputeDatedInstallerName()
+        {
+            var stamp = DateTime.Now.ToString("ddMMMyy", System.Globalization.CultureInfo.InvariantCulture).ToUpperInvariant();
+            return $"TestPackage_{stamp}.exe";
         }
 
         private void ClampToScreen()
         {
             var workArea = SystemParameters.WorkArea;
-            if (Height > workArea.Height)
-                Height = workArea.Height;
-            if (Width > workArea.Width)
-                Width = workArea.Width;
-        }
-
-        // ===== Structured Row Builders =====
-
-        private void AddTestFileRow(string path = "", string content = "")
-        {
-            var grid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            var pathBox = MakeTextBox(path, "Path (e.g. %InstallDir%\\test.txt)");
-            Grid.SetColumn(pathBox, 0);
-            pathBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var contentBox = MakeTextBox(content, "Content (optional)");
-            Grid.SetColumn(contentBox, 1);
-            contentBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var removeBtn = MakeRemoveButton(TestFilesList, grid);
-            Grid.SetColumn(removeBtn, 2);
-
-            grid.Children.Add(pathBox);
-            grid.Children.Add(contentBox);
-            grid.Children.Add(removeBtn);
-            TestFilesList.Children.Add(grid);
-        }
-
-        private void AddRegistryEntryRow(string keyPath = "", string valueName = "", string valueType = "REG_SZ", string valueData = "")
-        {
-            var grid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            var keyBox = MakeTextBox(keyPath, "HKCU\\Software\\...");
-            Grid.SetColumn(keyBox, 0);
-            keyBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var nameBox = MakeTextBox(valueName, "Value Name");
-            Grid.SetColumn(nameBox, 1);
-            nameBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var typeCombo = new ComboBox { FontSize = 11, Margin = new Thickness(0, 0, 4, 0), VerticalContentAlignment = VerticalAlignment.Center };
-            foreach (var t in new[] { "REG_SZ", "REG_DWORD", "REG_EXPAND_SZ", "REG_MULTI_SZ" })
-                typeCombo.Items.Add(t);
-            typeCombo.SelectedItem = valueType;
-            Grid.SetColumn(typeCombo, 2);
-
-            var dataBox = MakeTextBox(valueData, "Data");
-            Grid.SetColumn(dataBox, 3);
-            dataBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var removeBtn = MakeRemoveButton(RegistryEntriesList, grid);
-            Grid.SetColumn(removeBtn, 4);
-
-            grid.Children.Add(keyBox);
-            grid.Children.Add(nameBox);
-            grid.Children.Add(typeCombo);
-            grid.Children.Add(dataBox);
-            grid.Children.Add(removeBtn);
-            RegistryEntriesList.Children.Add(grid);
-        }
-
-        private void AddFileAssociationRow(string ext = "", string progId = "", string desc = "", string icon = "")
-        {
-            var grid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            var extBox = MakeTextBox(ext, ".ext");
-            Grid.SetColumn(extBox, 0);
-            extBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var progBox = MakeTextBox(progId, "ProgID");
-            Grid.SetColumn(progBox, 1);
-            progBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var descBox = MakeTextBox(desc, "Description");
-            Grid.SetColumn(descBox, 2);
-            descBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var iconBox = MakeTextBox(icon, "Icon path");
-            Grid.SetColumn(iconBox, 3);
-            iconBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var removeBtn = MakeRemoveButton(FileAssociationsList, grid);
-            Grid.SetColumn(removeBtn, 4);
-
-            grid.Children.Add(extBox);
-            grid.Children.Add(progBox);
-            grid.Children.Add(descBox);
-            grid.Children.Add(iconBox);
-            grid.Children.Add(removeBtn);
-            FileAssociationsList.Children.Add(grid);
-        }
-
-        private void AddContextMenuRow(string ext = "", string menuText = "", string command = "")
-        {
-            var grid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            var extBox = MakeTextBox(ext, "* or .ext");
-            Grid.SetColumn(extBox, 0);
-            extBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var textBox = MakeTextBox(menuText, "Menu Text");
-            Grid.SetColumn(textBox, 1);
-            textBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var cmdBox = MakeTextBox(command, "Command");
-            Grid.SetColumn(cmdBox, 2);
-            cmdBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var removeBtn = MakeRemoveButton(ContextMenuList, grid);
-            Grid.SetColumn(removeBtn, 3);
-
-            grid.Children.Add(extBox);
-            grid.Children.Add(textBox);
-            grid.Children.Add(cmdBox);
-            grid.Children.Add(removeBtn);
-            ContextMenuList.Children.Add(grid);
-        }
-
-        private void AddEnvVarRow(string scope = "User", string name = "", string value = "")
-        {
-            var grid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            var scopeCombo = new ComboBox { FontSize = 11, Margin = new Thickness(0, 0, 4, 0), VerticalContentAlignment = VerticalAlignment.Center };
-            scopeCombo.Items.Add("User");
-            scopeCombo.Items.Add("System");
-            scopeCombo.SelectedItem = scope;
-            Grid.SetColumn(scopeCombo, 0);
-
-            var nameBox = MakeTextBox(name, "Variable Name");
-            Grid.SetColumn(nameBox, 1);
-            nameBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var valBox = MakeTextBox(value, "Value");
-            Grid.SetColumn(valBox, 2);
-            valBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var removeBtn = MakeRemoveButton(EnvVarsList, grid);
-            Grid.SetColumn(removeBtn, 3);
-
-            grid.Children.Add(scopeCombo);
-            grid.Children.Add(nameBox);
-            grid.Children.Add(valBox);
-            grid.Children.Add(removeBtn);
-            EnvVarsList.Children.Add(grid);
-        }
-
-        private void AddFirewallRuleRow(string name = "", string dir = "In", string action = "Allow", string protocol = "TCP", string port = "")
-        {
-            var grid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(55) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(65) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            var nameBox = MakeTextBox(name, "Rule Name");
-            Grid.SetColumn(nameBox, 0); nameBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var dirCombo = new ComboBox { FontSize = 11, Margin = new Thickness(0, 0, 4, 0) };
-            dirCombo.Items.Add("In"); dirCombo.Items.Add("Out"); dirCombo.SelectedItem = dir;
-            Grid.SetColumn(dirCombo, 1);
-
-            var actCombo = new ComboBox { FontSize = 11, Margin = new Thickness(0, 0, 4, 0) };
-            actCombo.Items.Add("Allow"); actCombo.Items.Add("Block"); actCombo.SelectedItem = action;
-            Grid.SetColumn(actCombo, 2);
-
-            var protoCombo = new ComboBox { FontSize = 11, Margin = new Thickness(0, 0, 4, 0) };
-            protoCombo.Items.Add("TCP"); protoCombo.Items.Add("UDP"); protoCombo.SelectedItem = protocol;
-            Grid.SetColumn(protoCombo, 3);
-
-            var portBox = MakeTextBox(port, "Port");
-            Grid.SetColumn(portBox, 4); portBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var removeBtn = MakeRemoveButton(FirewallRulesList, grid);
-            Grid.SetColumn(removeBtn, 5);
-
-            grid.Children.Add(nameBox); grid.Children.Add(dirCombo); grid.Children.Add(actCombo);
-            grid.Children.Add(protoCombo); grid.Children.Add(portBox); grid.Children.Add(removeBtn);
-            FirewallRulesList.Children.Add(grid);
-        }
-
-        private void AddProtocolHandlerRow(string protocol = "", string desc = "")
-        {
-            var grid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            var protoBox = MakeTextBox(protocol, "Protocol");
-            Grid.SetColumn(protoBox, 0); protoBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var descBox = MakeTextBox(desc, "Description");
-            Grid.SetColumn(descBox, 1); descBox.Margin = new Thickness(0, 0, 4, 0);
-
-            var removeBtn = MakeRemoveButton(ProtocolHandlersList, grid);
-            Grid.SetColumn(removeBtn, 2);
-
-            grid.Children.Add(protoBox); grid.Children.Add(descBox); grid.Children.Add(removeBtn);
-            ProtocolHandlersList.Children.Add(grid);
-        }
-
-        private TextBox MakeTextBox(string text, string placeholder)
-        {
-            var tb = new TextBox { Text = text };
-            tb.SetResourceReference(StyleProperty, "FieldTextBox");
-            tb.FontSize = 12;
-            if (string.IsNullOrEmpty(text))
-            {
-                tb.Foreground = Brushes.Gray;
-                tb.Text = placeholder;
-                tb.Tag = placeholder;
-                tb.GotFocus += (s, _) => { if (tb.Text == (string)tb.Tag) { tb.Text = ""; tb.Foreground = Brushes.Black; } };
-                tb.LostFocus += (s, _) => { if (string.IsNullOrEmpty(tb.Text)) { tb.Text = (string)tb.Tag; tb.Foreground = Brushes.Gray; } };
-            }
-            return tb;
-        }
-
-        private static string GetTextBoxValue(TextBox tb)
-        {
-            if (tb.Tag != null && tb.Text == (string)tb.Tag) return "";
-            return tb.Text.Trim();
-        }
-
-        private static Button MakeRemoveButton(StackPanel parent, UIElement row)
-        {
-            var btn = new Button();
-            btn.SetResourceReference(StyleProperty, "RemoveButton");
-            btn.Click += (_, _) => parent.Children.Remove(row);
-            return btn;
-        }
-
-        // ===== Add Button Handlers =====
-
-        private void AddTestFile_Click(object sender, RoutedEventArgs e) => AddTestFileRow();
-        private void AddRegistryEntry_Click(object sender, RoutedEventArgs e) => AddRegistryEntryRow();
-        private void AddFileAssociation_Click(object sender, RoutedEventArgs e) => AddFileAssociationRow();
-        private void AddContextMenu_Click(object sender, RoutedEventArgs e) => AddContextMenuRow();
-        private void AddEnvVar_Click(object sender, RoutedEventArgs e) => AddEnvVarRow();
-        private void AddFirewallRule_Click(object sender, RoutedEventArgs e) => AddFirewallRuleRow();
-        private void AddProtocolHandler_Click(object sender, RoutedEventArgs e) => AddProtocolHandlerRow();
-
-        // ===== Serialization Helpers =====
-
-        private string CollectPipeSeparatedList(StackPanel list, string separator = ",")
-        {
-            var items = new List<string>();
-            foreach (var child in list.Children)
-            {
-                if (child is Grid grid)
-                {
-                    var parts = new List<string>();
-                    foreach (var cell in grid.Children)
-                    {
-                        if (cell is TextBox tb) parts.Add(GetTextBoxValue(tb));
-                        else if (cell is ComboBox cb) parts.Add(cb.SelectedItem?.ToString() ?? "");
-                    }
-                    // Remove trailing empty parts
-                    while (parts.Count > 0 && string.IsNullOrEmpty(parts[^1])) parts.RemoveAt(parts.Count - 1);
-                    if (parts.Any(p => !string.IsNullOrEmpty(p)))
-                        items.Add(string.Join("|", parts));
-                }
-            }
-            return string.Join(separator, items);
-        }
-
-        private void PopulatePipeSeparatedList(StackPanel list, string data, int fieldsPerEntry, Action<string[]> addRow)
-        {
-            list.Children.Clear();
-            if (string.IsNullOrWhiteSpace(data)) return;
-
-            // Split all fields by pipe, then group into entries of the expected size.
-            // This handles cases where field values contain commas (e.g. icon indices "app.exe,0")
-            // by first splitting the whole string on pipes and regrouping.
-            var allParts = data.Split('|').Select(s => s.Trim()).ToArray();
-
-            // Each entry has fieldsPerEntry pipe-separated fields.
-            // The comma separating entries appears at the boundary between the last field
-            // of one entry and the first field of the next.
-            // Reassemble then split properly: find commas that are between entries.
-            var entries = new List<string[]>();
-            var currentFields = new List<string>();
-
-            foreach (var part in allParts)
-            {
-                if (currentFields.Count == fieldsPerEntry - 1)
-                {
-                    // This is the last field of the current entry.
-                    // It may contain a comma followed by the first field of the next entry.
-                    var commaIdx = part.LastIndexOf(',');
-                    if (commaIdx > 0 && currentFields.Count == fieldsPerEntry - 1)
-                    {
-                        currentFields.Add(part[..commaIdx].Trim());
-                        entries.Add(currentFields.ToArray());
-                        currentFields = new List<string> { part[(commaIdx + 1)..].Trim() };
-                    }
-                    else
-                    {
-                        currentFields.Add(part);
-                        entries.Add(currentFields.ToArray());
-                        currentFields = new List<string>();
-                    }
-                }
-                else
-                {
-                    currentFields.Add(part);
-                }
-            }
-            if (currentFields.Count > 0)
-                entries.Add(currentFields.ToArray());
-
-            foreach (var entry in entries)
-            {
-                if (entry.Any(f => !string.IsNullOrEmpty(f)))
-                    addRow(entry);
-            }
+            if (Height > workArea.Height) Height = workArea.Height;
+            if (Width > workArea.Width) Width = workArea.Width;
         }
 
         // ===== Populate / Collect =====
@@ -407,67 +89,60 @@ namespace TestPackage.Configurator
             foreach (var c in m.Components)
                 AddComponentRow(c.Name, c.DefaultSelected);
 
-            ChkTestFilesEnabled.IsChecked = m.TestFilesEnabled;
-            PopulatePipeSeparatedList(TestFilesList, m.TestFiles, 2, p => AddTestFileRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? ""));
-
-            ChkRegistryEnabled.IsChecked = m.RegistryEnabled;
-            PopulatePipeSeparatedList(RegistryEntriesList, m.RegistryEntries, 4, p => AddRegistryEntryRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? "", p.ElementAtOrDefault(2) ?? "REG_SZ", p.ElementAtOrDefault(3) ?? ""));
-
-            ChkDesktopShortcut.IsChecked = m.CreateDesktopShortcut;
-            TxtDesktopShortcutName.Text = m.DesktopShortcutName;
-            ChkStartMenuEntry.IsChecked = m.CreateStartMenuEntry;
+            ChkTestFilesEnabled.IsChecked  = m.TestFilesEnabled;
+            ChkRegistryEnabled.IsChecked   = m.RegistryEnabled;
+            ChkDesktopShortcut.IsChecked   = m.CreateDesktopShortcut;
+            TxtDesktopShortcutName.Text    = m.DesktopShortcutName;
+            ChkStartMenuEntry.IsChecked    = m.CreateStartMenuEntry;
             _suppressPathSync = true;
-            TxtStartMenuFolder.Text = m.StartMenuFolder;
-            _userEditedStartMenuFolder = !string.Equals(m.StartMenuFolder, DeriveStartMenu(m.AppPublisher, m.AppName), StringComparison.OrdinalIgnoreCase);
+            TxtStartMenuFolder.Text        = m.StartMenuFolder;
+            _userEditedStartMenuFolder     = !string.Equals(m.StartMenuFolder, DeriveStartMenu(m.AppPublisher, m.AppName), StringComparison.OrdinalIgnoreCase);
             _suppressPathSync = false;
-            ChkPinToStartMenu.IsChecked = m.PinToStartMenu;
-
-            ChkFileAssociations.IsChecked = m.FileAssociationsEnabled;
-            PopulatePipeSeparatedList(FileAssociationsList, m.FileAssociations, 4, p => AddFileAssociationRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? "", p.ElementAtOrDefault(2) ?? "", p.ElementAtOrDefault(3) ?? ""));
-
-            ChkContextMenu.IsChecked = m.ContextMenuEnabled;
-            PopulatePipeSeparatedList(ContextMenuList, m.ContextMenuEntries, 3, p => AddContextMenuRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? "", p.ElementAtOrDefault(2) ?? ""));
-
-            ChkEnvVars.IsChecked = m.EnvironmentVariablesEnabled;
-            PopulatePipeSeparatedList(EnvVarsList, m.EnvironmentVariables, 3, p => AddEnvVarRow(p.ElementAtOrDefault(0) ?? "User", p.ElementAtOrDefault(1) ?? "", p.ElementAtOrDefault(2) ?? ""));
-
-            ChkService.IsChecked = m.ServicesEnabled;
-            TxtServiceName.Text = m.ServiceName;
-            TxtServiceDisplayName.Text = m.ServiceDisplayName;
+            ChkPinToStartMenu.IsChecked    = m.PinToStartMenu;
+            ChkFileAssociations.IsChecked  = m.FileAssociationsEnabled;
+            ChkContextMenu.IsChecked       = m.ContextMenuEnabled;
+            ChkEnvVars.IsChecked           = m.EnvironmentVariablesEnabled;
+            ChkService.IsChecked           = m.ServicesEnabled;
+            TxtServiceName.Text            = m.ServiceName;
+            TxtServiceDisplayName.Text     = m.ServiceDisplayName;
             SelectComboItem(CboServiceStartType, m.ServiceStartType);
-            ChkScheduledTask.IsChecked = m.ScheduledTasksEnabled;
-            TxtTaskName.Text = m.TaskName;
+            ChkScheduledTask.IsChecked     = m.ScheduledTasksEnabled;
+            TxtTaskName.Text               = m.TaskName;
             SelectComboItem(CboTaskSchedule, m.TaskSchedule);
-
-            ChkFirewall.IsChecked = m.FirewallRulesEnabled;
-            PopulatePipeSeparatedList(FirewallRulesList, m.FirewallRules, 5, p => AddFirewallRuleRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? "In", p.ElementAtOrDefault(2) ?? "Allow", p.ElementAtOrDefault(3) ?? "TCP", p.ElementAtOrDefault(4) ?? ""));
-
-            ChkProtocolHandlers.IsChecked = m.ProtocolHandlersEnabled;
-            PopulatePipeSeparatedList(ProtocolHandlersList, m.ProtocolHandlers, 2, p => AddProtocolHandlerRow(p.ElementAtOrDefault(0) ?? "", p.ElementAtOrDefault(1) ?? ""));
-
-            ChkActiveSetup.IsChecked = m.ActiveSetupEnabled;
-            ChkAppPaths.IsChecked = m.AppPathsEnabled;
-            ChkStartup.IsChecked = m.StartupEnabled;
+            ChkFirewall.IsChecked          = m.FirewallRulesEnabled;
+            ChkProtocolHandlers.IsChecked  = m.ProtocolHandlersEnabled;
+            ChkActiveSetup.IsChecked       = m.ActiveSetupEnabled;
+            ChkAppPaths.IsChecked          = m.AppPathsEnabled;
+            ChkStartup.IsChecked           = m.StartupEnabled;
             SelectComboItem(CboStartupMethod, m.StartupMethod);
 
             ChkRegisterUninstaller.IsChecked = m.RegisterUninstaller;
-            ChkCleanFiles.IsChecked = m.CleanFiles;
-            ChkCleanRegistry.IsChecked = m.CleanRegistry;
-            ChkCleanShortcuts.IsChecked = m.CleanShortcuts;
-            ChkLeaveFiles.IsChecked = m.IntentionallyLeaveFiles;
-            TxtLeftoverFiles.Text = m.LeftoverFiles;
-            ChkLeaveRegistry.IsChecked = m.IntentionallyLeaveRegistry;
-            TxtLeftoverRegistry.Text = m.LeftoverRegistry;
-            ChkPromptReboot.IsChecked = m.PromptForReboot;
-            ChkForceReboot.IsChecked = m.ForceReboot;
+            ChkCleanFiles.IsChecked          = m.CleanFiles;
+            ChkCleanRegistry.IsChecked       = m.CleanRegistry;
+            ChkCleanShortcuts.IsChecked      = m.CleanShortcuts;
+            ChkLeaveFiles.IsChecked          = m.IntentionallyLeaveFiles;
+            TxtLeftoverFiles.Text            = m.LeftoverFiles;
+            ChkLeaveRegistry.IsChecked       = m.IntentionallyLeaveRegistry;
+            TxtLeftoverRegistry.Text         = m.LeftoverRegistry;
+            ChkPromptReboot.IsChecked        = m.PromptForReboot;
+            ChkForceReboot.IsChecked         = m.ForceReboot;
 
             TxtBannerColor.Text = m.BannerColor;
             TxtAccentColor.Text = m.AccentColor;
             UpdateColorPreview(BannerColorPreview, m.BannerColor);
             UpdateColorPreview(AccentColorPreview, m.AccentColor);
             ChkShowProgressBar.IsChecked = m.ShowProgressBar;
-            ChkSimulateDelay.IsChecked = m.SimulateInstallDelay;
+            ChkSimulateDelay.IsChecked   = m.SimulateInstallDelay;
             TxtDelaySec.Text = (m.InstallDelayMs / 1000.0).ToString("0.###");
+
+            SelectComboItem(CboCodeSigningMode, string.IsNullOrWhiteSpace(m.CodeSigningMode) ? "None" : m.CodeSigningMode);
+            TxtCodeSigningPfxPath.Text     = m.CodeSigningPfxPath ?? "";
+            PwbCodeSigningPassword.Password = m.CodeSigningPfxPassword ?? "";
+            TxtCodeSigningTimestamp.Text   = string.IsNullOrWhiteSpace(m.CodeSigningTimestampUrl)
+                ? "http://timestamp.digicert.com" : m.CodeSigningTimestampUrl;
+            UpdateSigningPanelVisibility();
+
+            LoadCompositesFromModel(m);
         }
 
         private ConfigModel CollectToModel()
@@ -487,16 +162,16 @@ namespace TestPackage.Configurator
             m.InstallerSizeEnabled = ChkInstallerSize.IsChecked == true;
             m.InstallerSizeMB = ParseInstallerSizeMB();
 
-            m.ShowWelcome = ChkShowWelcome.IsChecked == true;
-            m.ShowEULA = ChkShowEULA.IsChecked == true;
-            m.ShowInstallContext = ChkShowInstallContext.IsChecked == true;
+            m.ShowWelcome         = ChkShowWelcome.IsChecked == true;
+            m.ShowEULA            = ChkShowEULA.IsChecked == true;
+            m.ShowInstallContext  = ChkShowInstallContext.IsChecked == true;
             m.ShowTargetDirectory = ChkShowTargetDirectory.IsChecked == true;
-            m.ShowComponents = ChkShowComponents.IsChecked == true;
+            m.ShowComponents      = ChkShowComponents.IsChecked == true;
             m.ShowDesktopShortcut = ChkShowDesktopShortcut.IsChecked == true;
-            m.ShowStartMenuPin = ChkShowStartMenuPin.IsChecked == true;
-            m.ShowRebootOption = ChkShowRebootOption.IsChecked == true;
-            m.ShowActiveSetup = ChkShowActiveSetup.IsChecked == true;
-            m.EULAText = TxtEULAText.Text;
+            m.ShowStartMenuPin    = ChkShowStartMenuPin.IsChecked == true;
+            m.ShowRebootOption    = ChkShowRebootOption.IsChecked == true;
+            m.ShowActiveSetup     = ChkShowActiveSetup.IsChecked == true;
+            m.EULAText            = TxtEULAText.Text;
 
             m.Components.Clear();
             foreach (var child in ComponentsList.Children)
@@ -506,55 +181,56 @@ namespace TestPackage.Configurator
                     m.Components.Add(new ComponentEntry(tb.Text, cb.IsChecked == true));
             }
 
-            m.TestFilesEnabled = ChkTestFilesEnabled.IsChecked == true;
-            m.TestFiles = CollectPipeSeparatedList(TestFilesList);
-            m.RegistryEnabled = ChkRegistryEnabled.IsChecked == true;
-            m.RegistryEntries = CollectPipeSeparatedList(RegistryEntriesList);
-            m.CreateDesktopShortcut = ChkDefaultDesktopShortcut.IsChecked == true;
-            m.DesktopShortcutName = TxtDesktopShortcutName.Text.Trim();
-            m.CreateStartMenuEntry = ChkStartMenuEntry.IsChecked == true;
-            m.StartMenuFolder = TxtStartMenuFolder.Text.Trim();
-            m.PinToStartMenu = ChkDefaultStartMenuPin.IsChecked == true;
-            m.FileAssociationsEnabled = ChkFileAssociations.IsChecked == true;
-            m.FileAssociations = CollectPipeSeparatedList(FileAssociationsList);
-            m.ContextMenuEnabled = ChkContextMenu.IsChecked == true;
-            m.ContextMenuEntries = CollectPipeSeparatedList(ContextMenuList);
+            m.TestFilesEnabled            = ChkTestFilesEnabled.IsChecked == true;
+            m.RegistryEnabled             = ChkRegistryEnabled.IsChecked == true;
+            m.CreateDesktopShortcut       = ChkDefaultDesktopShortcut.IsChecked == true;
+            m.DesktopShortcutName         = TxtDesktopShortcutName.Text.Trim();
+            m.CreateStartMenuEntry        = ChkStartMenuEntry.IsChecked == true;
+            m.StartMenuFolder             = TxtStartMenuFolder.Text.Trim();
+            m.PinToStartMenu              = ChkDefaultStartMenuPin.IsChecked == true;
+            m.FileAssociationsEnabled     = ChkFileAssociations.IsChecked == true;
+            m.ContextMenuEnabled          = ChkContextMenu.IsChecked == true;
             m.EnvironmentVariablesEnabled = ChkEnvVars.IsChecked == true;
-            m.EnvironmentVariables = CollectPipeSeparatedList(EnvVarsList);
 
-            m.ServicesEnabled = ChkService.IsChecked == true;
-            m.ServiceName = TxtServiceName.Text.Trim();
-            m.ServiceDisplayName = TxtServiceDisplayName.Text.Trim();
-            m.ServiceStartType = GetComboText(CboServiceStartType);
+            m.ServicesEnabled       = ChkService.IsChecked == true;
+            m.ServiceName           = TxtServiceName.Text.Trim();
+            m.ServiceDisplayName    = TxtServiceDisplayName.Text.Trim();
+            m.ServiceStartType      = GetComboText(CboServiceStartType);
             m.ScheduledTasksEnabled = ChkScheduledTask.IsChecked == true;
-            m.TaskName = TxtTaskName.Text.Trim();
-            m.TaskSchedule = GetComboText(CboTaskSchedule);
-            m.FirewallRulesEnabled = ChkFirewall.IsChecked == true;
-            m.FirewallRules = CollectPipeSeparatedList(FirewallRulesList);
+            m.TaskName              = TxtTaskName.Text.Trim();
+            m.TaskSchedule          = GetComboText(CboTaskSchedule);
+            m.FirewallRulesEnabled  = ChkFirewall.IsChecked == true;
             m.ProtocolHandlersEnabled = ChkProtocolHandlers.IsChecked == true;
-            m.ProtocolHandlers = CollectPipeSeparatedList(ProtocolHandlersList);
-            m.ActiveSetupEnabled = ChkDefaultActiveSetup.IsChecked == true;
-            m.AppPathsEnabled = ChkAppPaths.IsChecked == true;
-            m.StartupEnabled = ChkStartup.IsChecked == true;
-            m.StartupMethod = GetComboText(CboStartupMethod);
+            m.ActiveSetupEnabled    = ChkDefaultActiveSetup.IsChecked == true;
+            m.AppPathsEnabled       = ChkAppPaths.IsChecked == true;
+            m.StartupEnabled        = ChkStartup.IsChecked == true;
+            m.StartupMethod         = GetComboText(CboStartupMethod);
 
-            m.RegisterUninstaller = ChkRegisterUninstaller.IsChecked == true;
-            m.CleanFiles = ChkCleanFiles.IsChecked == true;
-            m.CleanRegistry = ChkCleanRegistry.IsChecked == true;
-            m.CleanShortcuts = ChkCleanShortcuts.IsChecked == true;
-            m.IntentionallyLeaveFiles = ChkLeaveFiles.IsChecked == true;
-            m.LeftoverFiles = TxtLeftoverFiles.Text;
+            m.RegisterUninstaller       = ChkRegisterUninstaller.IsChecked == true;
+            m.CleanFiles                = ChkCleanFiles.IsChecked == true;
+            m.CleanRegistry             = ChkCleanRegistry.IsChecked == true;
+            m.CleanShortcuts            = ChkCleanShortcuts.IsChecked == true;
+            m.IntentionallyLeaveFiles   = ChkLeaveFiles.IsChecked == true;
+            m.LeftoverFiles             = TxtLeftoverFiles.Text;
             m.IntentionallyLeaveRegistry = ChkLeaveRegistry.IsChecked == true;
-            m.LeftoverRegistry = TxtLeftoverRegistry.Text;
-            m.PromptForReboot = ChkDefaultReboot.IsChecked == true;
-            m.ForceReboot = ChkForceReboot.IsChecked == true;
+            m.LeftoverRegistry          = TxtLeftoverRegistry.Text;
+            m.PromptForReboot           = ChkDefaultReboot.IsChecked == true;
+            m.ForceReboot               = ChkForceReboot.IsChecked == true;
 
             m.BannerColor = TxtBannerColor.Text.Trim();
             m.AccentColor = TxtAccentColor.Text.Trim();
-            m.ShowProgressBar = ChkShowProgressBar.IsChecked == true;
+            m.ShowProgressBar     = ChkShowProgressBar.IsChecked == true;
             m.SimulateInstallDelay = ChkSimulateDelay.IsChecked == true;
             m.InstallDelayMs = double.TryParse(TxtDelaySec.Text, out var sec) ? (int)(sec * 1000) : 500;
             m.AppPathsExeName = m.AppExeName;
+
+            m.CodeSigningMode         = GetComboText(CboCodeSigningMode);
+            if (string.IsNullOrWhiteSpace(m.CodeSigningMode)) m.CodeSigningMode = "None";
+            m.CodeSigningPfxPath      = TxtCodeSigningPfxPath.Text.Trim();
+            m.CodeSigningPfxPassword  = PwbCodeSigningPassword.Password;
+            m.CodeSigningTimestampUrl = TxtCodeSigningTimestamp.Text.Trim();
+
+            SaveCompositesToModel(m);
             return m;
         }
 
@@ -563,8 +239,6 @@ namespace TestPackage.Configurator
         private void Preview_Click(object sender, RoutedEventArgs e)
         {
             var model = CollectToModel();
-
-            // Find the installer template
             var exeDir = AppDomain.CurrentDomain.BaseDirectory;
             var templatesDir = Path.Combine(exeDir, "templates");
             if (!Directory.Exists(templatesDir)) templatesDir = exeDir;
@@ -579,15 +253,11 @@ namespace TestPackage.Configurator
 
             try
             {
-                // Generate to a temp folder
                 var tempDir = Path.Combine(Path.GetTempPath(), "TestPackage_Preview_" + Guid.NewGuid().ToString("N")[..8]);
                 var tempDataDir = Path.Combine(tempDir, "_data");
                 Directory.CreateDirectory(tempDataDir);
-
                 File.Copy(installerTemplate, Path.Combine(tempDir, "TestPackageInstaller.exe"), true);
                 File.WriteAllText(Path.Combine(tempDataDir, "config.ini"), ConfigWriter.Write(model));
-
-                // Launch with --preview flag
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = Path.Combine(tempDir, "TestPackageInstaller.exe"),
@@ -629,18 +299,14 @@ namespace TestPackage.Configurator
 
             try
             {
-                // Create a subfolder using the installer name (without extension)
                 var subfolderName = Path.GetFileNameWithoutExtension(model.InstallerExeName);
                 var packageFolder = Path.Combine(outputFolder, subfolderName);
                 var dataFolder = Path.Combine(packageFolder, "_data");
                 Directory.CreateDirectory(dataFolder);
 
-                // Installer EXE goes in the root of the package folder
                 var installerExePath = Path.Combine(packageFolder, model.InstallerExeName);
                 File.Copy(installerTemplate, installerExePath, true);
 
-                // Pad the generated setup EXE to the requested size (appends trailing
-                // bytes after the PE image, which the loader ignores).
                 var sizeNote = "";
                 if (model.InstallerSizeEnabled && model.InstallerSizeMB > 0)
                 {
@@ -659,13 +325,24 @@ namespace TestPackage.Configurator
                     }
                 }
 
-                // Companion files go in _data (installer reads from here at runtime)
+                // Code signing (after padding so the signature covers the padded file).
+                // On None, the template's original signature is already invalidated by
+                // padding, so the generated installer ships unsigned.
+                var signNote = "\n\nSigned as: unsigned (template signature invalidated by padding)";
+                if (model.CodeSigningMode.Equals("PFX", StringComparison.OrdinalIgnoreCase))
+                {
+                    var (ok, msg) = SignInstaller(installerExePath, model);
+                    signNote = ok
+                        ? $"\n\nSigned with your PFX via {msg}"
+                        : $"\n\nSigning failed — installer is unsigned:\n{msg}";
+                }
+
                 if (File.Exists(appTemplate))
                     File.Copy(appTemplate, Path.Combine(dataFolder, model.AppExeName), true);
                 File.WriteAllText(Path.Combine(dataFolder, "config.ini"), ConfigWriter.Write(model));
 
                 MessageBox.Show(
-                    $"Installer generated!\n\n{packageFolder}\\{model.InstallerExeName}{sizeNote}\n\n" +
+                    $"Installer generated!\n\n{packageFolder}\\{model.InstallerExeName}{sizeNote}{signNote}\n\n" +
                     "Run this EXE to test your packaging workflow.",
                     "TestPackage", MessageBoxButton.OK, MessageBoxImage.Information);
                 Process.Start(new ProcessStartInfo { FileName = packageFolder, UseShellExecute = true });
@@ -720,7 +397,7 @@ namespace TestPackage.Configurator
         {
             var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 2, 0, 2) };
             panel.Children.Add(new CheckBox { IsChecked = selected, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center });
-            panel.Children.Add(new TextBlock { Text = name, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Width = 200 });
+            panel.Children.Add(new TextBlock { Text = name, FontSize = 13, VerticalAlignment = VerticalAlignment.Center, Width = 200 });
             ComponentsList.Children.Add(panel);
         }
 
@@ -791,8 +468,6 @@ namespace TestPackage.Configurator
         private void DefaultPath_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (_suppressPathSync) return;
-            // Any user-typed change opts out of auto-derivation. Clearing the field
-            // re-enables it so they can let it follow publisher/app name again.
             _userEditedDefaultPath = TxtDefaultPath.Text.Trim().Length > 0;
         }
 
@@ -806,8 +481,6 @@ namespace TestPackage.Configurator
 
         private bool _suppressSizeSync;
 
-        // Slider position 0..100 maps to MB via a cubic curve, so small drags on
-        // the left give fine megabyte control and the right end reaches 100 GB.
         private static int SliderPosToMB(double pos)
         {
             pos = Math.Clamp(pos, 0, 100);
@@ -862,6 +535,1005 @@ namespace TestPackage.Configurator
             SldInstallerSize.Value = MBToSliderPos(mb);
             UpdateInstallerSizeReadout(mb);
             _suppressSizeSync = false;
+        }
+
+        // ===== Live receipt rail + frame nav tiles =====
+
+        private DispatcherTimer? _receiptTimer;
+
+        private void StartReceiptTimer()
+        {
+            _receiptTimer = new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromMilliseconds(400)
+            };
+            _receiptTimer.Tick += (_, _) => { try { UpdateReceipt(); } catch { } };
+            _receiptTimer.Start();
+        }
+
+        private void UpdateReceipt()
+        {
+            var installerName = string.IsNullOrWhiteSpace(TxtInstallerExeName.Text)
+                ? "YourSimulatedSetup.exe" : TxtInstallerExeName.Text.Trim();
+            var displayName = string.IsNullOrWhiteSpace(TxtAppName.Text)
+                ? "your installer" : TxtAppName.Text.Trim();
+            var publisher = string.IsNullOrWhiteSpace(TxtAppPublisher.Text) ? "—" : TxtAppPublisher.Text.Trim();
+            if (RunInstallerExeName != null) RunInstallerExeName.Text = installerName;
+            if (RunPersonaAppName   != null) RunPersonaAppName.Text   = displayName;
+
+            if (LblTileIdentity != null) LblTileIdentity.Text = $"{displayName} · {publisher}";
+            if (LblTileWizard != null)
+            {
+                var pages = 0;
+                if (ChkShowWelcome.IsChecked == true) pages++;
+                if (ChkShowEULA.IsChecked == true) pages++;
+                if (ChkShowInstallContext.IsChecked == true) pages++;
+                if (ChkShowTargetDirectory.IsChecked == true) pages++;
+                if (ChkShowComponents.IsChecked == true) pages++;
+                if (ChkShowDesktopShortcut.IsChecked == true) pages++;
+                if (ChkShowStartMenuPin.IsChecked == true) pages++;
+                if (ChkShowRebootOption.IsChecked == true) pages++;
+                if (ChkShowActiveSetup.IsChecked == true) pages++;
+                LblTileWizard.Text = pages == 1 ? "1 page" : $"{pages} pages";
+            }
+
+            var behaviors = new List<string>();
+            if (ChkTestFilesEnabled.IsChecked == true) behaviors.Add("Files");
+            if (ChkRegistryEnabled.IsChecked == true)  behaviors.Add("Registry");
+            if (ChkDesktopShortcut.IsChecked == true || ChkStartMenuEntry.IsChecked == true) behaviors.Add("Shortcuts");
+            if (ChkFileAssociations.IsChecked == true) behaviors.Add("File associations");
+            if (ChkContextMenu.IsChecked == true)      behaviors.Add("Context menu");
+            if (ChkEnvVars.IsChecked == true)          behaviors.Add("Env vars");
+            if (ChkService.IsChecked == true)          behaviors.Add("Windows service");
+            if (ChkScheduledTask.IsChecked == true)    behaviors.Add("Scheduled task");
+            if (ChkFirewall.IsChecked == true)         behaviors.Add("Firewall");
+            if (ChkProtocolHandlers.IsChecked == true) behaviors.Add("Protocol handlers");
+            if (ChkActiveSetup.IsChecked == true)      behaviors.Add("Active Setup");
+            if (ChkAppPaths.IsChecked == true)         behaviors.Add("App Paths");
+            if (ChkStartup.IsChecked == true)          behaviors.Add("Startup");
+            if (LblReceiptBehaviors != null)
+                LblReceiptBehaviors.Text = behaviors.Count == 0 ? "none" : string.Join("\n", behaviors);
+
+            if (LblTileInstallActions != null)
+                LblTileInstallActions.Text = behaviors.Count == 0 ? "none on" : $"{behaviors.Count} on";
+
+            if (LblTileUninstall != null)
+            {
+                var leftovers = (ChkLeaveFiles.IsChecked == true) || (ChkLeaveRegistry.IsChecked == true);
+                var clean = ChkCleanFiles.IsChecked == true && ChkCleanRegistry.IsChecked == true;
+                LblTileUninstall.Text = leftovers ? "leftovers on"
+                    : (clean ? "clean sweep" : "partial cleanup");
+            }
+
+            if (LblTileAppearance != null)
+                LblTileAppearance.Text = string.IsNullOrWhiteSpace(TxtBannerColor.Text) ? "default" : TxtBannerColor.Text.Trim();
+
+            if (LblTilePackage != null)
+                LblTilePackage.Text = installerName;
+
+            if (LblReceiptSize != null)
+            {
+                if (ChkInstallerSize.IsChecked == true)
+                {
+                    var mb = ParseInstallerSizeMB();
+                    LblReceiptSize.Text = mb >= 1024 ? $"{mb} MB  ({mb / 1024.0:0.##} GB)" : $"{mb} MB";
+                }
+                else
+                {
+                    LblReceiptSize.Text = "smallest possible";
+                }
+            }
+
+            if (LblReceiptElevation != null)
+            {
+                var ctx = CboDefaultContext.SelectedIndex == 1 ? "Per-user" : "Per-machine";
+                var admin = ChkRequireAdmin.IsChecked == true ? "  ·  UAC" : "";
+                LblReceiptElevation.Text = ctx + admin;
+            }
+
+            if (LblReceiptInstallDir != null)
+                LblReceiptInstallDir.Text = TxtDefaultPath.Text;
+
+            if (LblReceiptSummary != null)
+                LblReceiptSummary.Text = $"Generate builds {installerName}. Running that installer registers {displayName} in Add/Remove Programs, performs the behaviors above, and drops the audit viewer.";
+
+            UpdateCompositeSummaries();
+        }
+
+        private void FrameTile_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button b || b.Tag is not string key) return;
+            ScrollToFrame(FrameByKey(key));
+            UpdateSelectedTile(key);
+        }
+
+        private FrameworkElement? FrameByKey(string key) => key switch
+        {
+            "Identity"       => FrameIdentity,
+            "Wizard"         => FrameWizard,
+            "InstallActions" => FrameInstallActions,
+            "Uninstall"      => FrameUninstall,
+            "Appearance"     => FrameAppearance,
+            "Package"        => FramePackage,
+            _ => null
+        };
+
+        // Scroll the frames column so the target frame's top sits near the
+        // top of the viewport. BringIntoView() only guarantees visibility,
+        // which lands mid-frame if you were already scrolled down in the
+        // previous frame — this puts the frame heading at the top.
+        private void ScrollToFrame(FrameworkElement? target)
+        {
+            if (target == null || FramesScroll == null) return;
+            var content = FramesScroll.Content as UIElement;
+            if (content == null) return;
+            try
+            {
+                var y = target.TranslatePoint(new System.Windows.Point(0, 0), content).Y;
+                FramesScroll.ScrollToVerticalOffset(Math.Max(0, y - 12));
+            }
+            catch { /* pre-layout call; a later ScrollChanged will resync */ }
+        }
+
+        // As the user scrolls, the tile matching whichever frame is currently
+        // at the top of the viewport lights up.
+        private void FramesScroll_ScrollChanged(object sender, System.Windows.Controls.ScrollChangedEventArgs e)
+            => UpdateSelectedTileFromScroll();
+
+        private void UpdateSelectedTileFromScroll()
+        {
+            if (FramesScroll == null || FramesScroll.Content is not UIElement content) return;
+            var scrollY = FramesScroll.VerticalOffset;
+            var threshold = scrollY + 40;   // a tile "activates" once its top has scrolled past 40px into the viewport
+            var frames = new (string key, FrameworkElement? el)[]
+            {
+                ("Identity",       FrameIdentity),
+                ("Wizard",         FrameWizard),
+                ("InstallActions", FrameInstallActions),
+                ("Uninstall",      FrameUninstall),
+                ("Appearance",     FrameAppearance),
+                ("Package",        FramePackage),
+            };
+            string current = "Identity";
+            foreach (var (key, el) in frames)
+            {
+                if (el == null) continue;
+                try
+                {
+                    var y = el.TranslatePoint(new System.Windows.Point(0, 0), content).Y;
+                    if (y <= threshold) current = key;
+                }
+                catch { }
+            }
+            UpdateSelectedTile(current);
+        }
+
+        private void UpdateSelectedTile(string current)
+        {
+            if (FrameTilesPanel == null) return;
+            var accent    = (Brush)FindResource("AccentBrush");
+            var accentTint = (Brush)FindResource("AccentTintBrush");
+            var ink       = (Brush)FindResource("InkBrush");
+            foreach (var child in FrameTilesPanel.Children)
+            {
+                if (child is Button btn && btn.Tag is string tag)
+                {
+                    var selected = tag == current;
+                    btn.BorderBrush = selected ? accent : ink;
+                    btn.BorderThickness = selected ? new Thickness(2) : new Thickness(1);
+                    btn.Background = selected ? accentTint : Brushes.White;
+                }
+            }
+        }
+
+        // ===== Code signing =====
+
+        private void CodeSigningMode_Changed(object sender, SelectionChangedEventArgs e)
+            => UpdateSigningPanelVisibility();
+
+        private void UpdateSigningPanelVisibility()
+        {
+            if (PnlSigningPfxDetails == null) return;
+            var mode = GetComboText(CboCodeSigningMode);
+            PnlSigningPfxDetails.Visibility = mode.Equals("PFX", StringComparison.OrdinalIgnoreCase)
+                ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void BrowsePfx_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "PFX certificate (*.pfx)|*.pfx|All files (*.*)|*.*",
+                Title  = "Select .pfx certificate"
+            };
+            if (!string.IsNullOrEmpty(TxtCodeSigningPfxPath.Text)
+                && File.Exists(TxtCodeSigningPfxPath.Text))
+                dialog.InitialDirectory = Path.GetDirectoryName(TxtCodeSigningPfxPath.Text);
+            if (dialog.ShowDialog() == true)
+                TxtCodeSigningPfxPath.Text = dialog.FileName;
+        }
+
+        // Attempts signtool.exe first (better output), falls back to PowerShell
+        // Set-AuthenticodeSignature. Returns (success, message describing method
+        // or the error output).
+        private static (bool ok, string message) SignInstaller(string exePath, ConfigModel m)
+        {
+            if (string.IsNullOrWhiteSpace(m.CodeSigningPfxPath))
+                return (false, "no PFX path set");
+            if (!File.Exists(m.CodeSigningPfxPath))
+                return (false, $"PFX not found: {m.CodeSigningPfxPath}");
+
+            var signtool = FindSigntool();
+            if (signtool != null)
+            {
+                var args = $"sign /fd SHA256 /td SHA256 /tr \"{m.CodeSigningTimestampUrl}\" " +
+                           $"/f \"{m.CodeSigningPfxPath}\" /p \"{m.CodeSigningPfxPassword}\" " +
+                           $"\"{exePath}\"";
+                var (exit, so, se) = RunCapture(signtool, args, null);
+                if (exit == 0) return (true, "signtool");
+                var detail = string.IsNullOrWhiteSpace(se) ? so : se;
+                return (false, $"signtool failed (exit {exit}):\n{detail.Trim()}");
+            }
+
+            // PowerShell fallback. Pass password via env var to avoid quoting
+            // pitfalls, and 'exit $LASTEXITCODE'-style propagate signing errors.
+            var script =
+                "$ErrorActionPreference='Stop';" +
+                "$pw = ConvertTo-SecureString -String $env:_TP_PFXPW -AsPlainText -Force;" +
+                $"$cert = Get-PfxCertificate -FilePath '{m.CodeSigningPfxPath.Replace("'", "''")}' -Password $pw;" +
+                $"$r = Set-AuthenticodeSignature -FilePath '{exePath.Replace("'", "''")}' -Certificate $cert " +
+                $" -TimestampServer '{m.CodeSigningTimestampUrl.Replace("'", "''")}' -HashAlgorithm SHA256;" +
+                "if ($r.Status -ne 'Valid') { Write-Error $r.StatusMessage; exit 1 }";
+            var env = new Dictionary<string, string?> { ["_TP_PFXPW"] = m.CodeSigningPfxPassword };
+            var (pxExit, pxOut, pxErr) = RunCapture("powershell.exe",
+                $"-NoProfile -ExecutionPolicy Bypass -Command \"{script.Replace("\"", "\\\"")}\"",
+                env);
+            if (pxExit == 0) return (true, "PowerShell Set-AuthenticodeSignature");
+            var pxDetail = string.IsNullOrWhiteSpace(pxErr) ? pxOut : pxErr;
+            return (false, $"PowerShell signing failed (exit {pxExit}):\n{pxDetail.Trim()}");
+        }
+
+        private static string? FindSigntool()
+        {
+            // Try `where signtool` first (respects PATH)
+            try
+            {
+                var (exit, so, _) = RunCapture("where.exe", "signtool.exe", null);
+                if (exit == 0)
+                {
+                    var first = so.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
+                    if (!string.IsNullOrEmpty(first) && File.Exists(first)) return first;
+                }
+            }
+            catch { }
+
+            // Fall back to common Windows Kits locations
+            var kits = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+            if (!string.IsNullOrEmpty(kits))
+            {
+                var binDir = Path.Combine(kits, "Windows Kits", "10", "bin");
+                if (Directory.Exists(binDir))
+                {
+                    foreach (var arch in new[] { "x64", "x86" })
+                    {
+                        foreach (var version in Directory.EnumerateDirectories(binDir)
+                                                        .Select(Path.GetFileName)
+                                                        .OrderByDescending(n => n ?? ""))
+                        {
+                            if (version == null) continue;
+                            var candidate = Path.Combine(binDir, version, arch, "signtool.exe");
+                            if (File.Exists(candidate)) return candidate;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        private static (int exit, string stdOut, string stdErr) RunCapture(string file, string args,
+            IDictionary<string, string?>? extraEnv)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = file,
+                Arguments = args,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            if (extraEnv != null)
+                foreach (var kv in extraEnv) psi.EnvironmentVariables[kv.Key] = kv.Value;
+            using var p = Process.Start(psi);
+            if (p == null) return (-1, "", $"failed to start {file}");
+            var so = p.StandardOutput.ReadToEnd();
+            var se = p.StandardError.ReadToEnd();
+            p.WaitForExit(120_000);
+            return (p.ExitCode, so, se);
+        }
+
+        // ===== Presets =====
+
+        private void ApplyPreset_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button b && b.Tag is string presetName)
+                ApplyPreset(presetName);
+        }
+
+        private void ApplyPreset(string presetName)
+        {
+            string iniText;
+            try { iniText = ReadEmbeddedPreset(presetName); }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not load preset '{presetName}':\n{ex.Message}",
+                    "TestPackage", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var current = CollectToModel();
+            var next = CloneModel(current);
+            ResetInstallActions(next);
+            ApplyPresetIniToModel(next, iniText, current);
+
+            _model = next;
+            PopulateFromModel(_model);
+            UpdateReceipt();
+        }
+
+        private static string ReadEmbeddedPreset(string presetName)
+        {
+            var asm = Assembly.GetExecutingAssembly();
+            var resource = $"TestPackage.Configurator.Presets.{presetName}.ini";
+            using var stream = asm.GetManifestResourceStream(resource)
+                ?? throw new FileNotFoundException($"Embedded preset not found: {resource}");
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
+        }
+
+        private static ConfigModel CloneModel(ConfigModel s)
+        {
+            var text = ConfigWriter.Write(s);
+            var tmp = Path.Combine(Path.GetTempPath(), "TestPackage_Clone_" + Guid.NewGuid().ToString("N")[..8] + ".ini");
+            try
+            {
+                File.WriteAllText(tmp, text);
+                return ConfigModel.FromParser(ConfigParser.Load(tmp));
+            }
+            finally
+            {
+                try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+            }
+        }
+
+        private static void ResetInstallActions(ConfigModel m)
+        {
+            m.TestFilesEnabled = false;                m.TestFiles = "";
+            m.RegistryEnabled = false;                 m.RegistryEntries = "";
+            m.CreateDesktopShortcut = false;
+            m.CreateStartMenuEntry = false;
+            m.PinToStartMenu = false;
+            m.FileAssociationsEnabled = false;         m.FileAssociations = "";
+            m.ContextMenuEnabled = false;              m.ContextMenuEntries = "";
+            m.EnvironmentVariablesEnabled = false;     m.EnvironmentVariables = "";
+            m.ServicesEnabled = false;
+            m.ScheduledTasksEnabled = false;
+            m.FirewallRulesEnabled = false;            m.FirewallRules = "";
+            m.ProtocolHandlersEnabled = false;
+            m.ActiveSetupEnabled = false;
+            m.AppPathsEnabled = false;
+            m.StartupEnabled = false;
+            m.FontsEnabled = false;
+            m.COMRegistrationEnabled = false;
+        }
+
+        private static void ApplyPresetIniToModel(ConfigModel m, string iniText, ConfigModel identity)
+        {
+            var sections = ParseIndicativeIni(iniText);
+            string Sub(string s) => (s ?? "")
+                .Replace("<Publisher>", identity.AppPublisher ?? "")
+                .Replace("<AppName>", identity.AppName ?? "")
+                .Replace("<AppExe>", identity.AppExeName ?? "")
+                .Replace("<Version>", identity.AppVersion ?? "");
+
+            bool GetEnabled(string sect)
+            {
+                if (!sections.TryGetValue(sect, out var s)) return false;
+                if (!s.TryGetValue("Enabled", out var v)) return false;
+                return v == "1" || v.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+
+            List<string> Collect(string sect, string prefix)
+            {
+                var list = new List<string>();
+                if (!sections.TryGetValue(sect, out var s)) return list;
+                for (int i = 1; ; i++)
+                {
+                    if (!s.TryGetValue(prefix + i, out var v)) break;
+                    list.Add(Sub(v));
+                }
+                return list;
+            }
+
+            m.TestFilesEnabled = GetEnabled("Files");
+            var files = Collect("Files", "File");
+            if (files.Count > 0) m.TestFiles = string.Join(",", files);
+
+            m.RegistryEnabled = GetEnabled("Registry");
+            var regs = Collect("Registry", "Entry");
+            if (regs.Count > 0) m.RegistryEntries = string.Join(",", regs);
+
+            if (GetEnabled("Shortcuts"))
+            {
+                var sc = sections["Shortcuts"];
+                if (sc.TryGetValue("Desktop", out var d) && d == "1")     m.CreateDesktopShortcut = true;
+                if (sc.TryGetValue("StartMenu", out var sm) && sm == "1") m.CreateStartMenuEntry = true;
+                if (sc.TryGetValue("Pin", out var pin) && pin == "1")     m.PinToStartMenu = true;
+                if (sc.TryGetValue("StartMenuFolder", out var smf) && !string.IsNullOrWhiteSpace(smf))
+                    m.StartMenuFolder = Sub(smf);
+            }
+
+            m.FileAssociationsEnabled = GetEnabled("FileAssociations");
+            var assocs = Collect("FileAssociations", "Assoc");
+            if (assocs.Count > 0) m.FileAssociations = string.Join(",", assocs);
+
+            m.ContextMenuEnabled = GetEnabled("ContextMenu");
+
+            m.EnvironmentVariablesEnabled = GetEnabled("EnvVars");
+            var vars = Collect("EnvVars", "Var");
+            if (vars.Count > 0)
+            {
+                var expanded = vars.Select(v =>
+                {
+                    var parts = v.Split('|');
+                    return parts.Length >= 3 ? v : "User|" + v;
+                });
+                m.EnvironmentVariables = string.Join(",", expanded);
+            }
+
+            m.ServicesEnabled = GetEnabled("Service");
+            if (sections.TryGetValue("Service", out var svc))
+            {
+                if (svc.TryGetValue("ServiceName", out var sn)) m.ServiceName = Sub(sn);
+                if (svc.TryGetValue("DisplayName", out var dn)) m.ServiceDisplayName = Sub(dn);
+                if (svc.TryGetValue("StartType", out var st))   m.ServiceStartType = st;
+            }
+
+            m.ScheduledTasksEnabled = GetEnabled("ScheduledTask");
+            if (sections.TryGetValue("ScheduledTask", out var tsk))
+            {
+                if (tsk.TryGetValue("TaskName", out var tn)) m.TaskName = Sub(tn);
+                if (tsk.TryGetValue("Schedule", out var sc)) m.TaskSchedule = sc;
+            }
+
+            m.FirewallRulesEnabled = GetEnabled("Firewall");
+            var rules = Collect("Firewall", "Rule");
+            if (rules.Count > 0) m.FirewallRules = string.Join(",", rules);
+
+            m.ProtocolHandlersEnabled = GetEnabled("Protocols");
+            m.ActiveSetupEnabled      = GetEnabled("ActiveSetup");
+            m.AppPathsEnabled         = GetEnabled("AppPaths");
+            m.StartupEnabled          = GetEnabled("Startup");
+            m.FontsEnabled            = GetEnabled("Fonts");
+            m.COMRegistrationEnabled  = GetEnabled("COM");
+
+            if (sections.TryGetValue("Install", out var inst)
+                && inst.TryGetValue("DefaultContext", out var ctx))
+            {
+                m.DefaultContext = ctx.Equals("machine", StringComparison.OrdinalIgnoreCase)
+                    ? "Machine" : "User";
+            }
+        }
+
+        private static Dictionary<string, Dictionary<string, string>> ParseIndicativeIni(string text)
+        {
+            var result = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+            string current = "";
+            foreach (var raw in text.Split('\n'))
+            {
+                var line = raw.Trim().TrimEnd('\r');
+                if (string.IsNullOrEmpty(line) || line.StartsWith(";") || line.StartsWith("#")) continue;
+
+                while (line.StartsWith("["))
+                {
+                    var end = line.IndexOf(']');
+                    if (end < 0) break;
+                    current = line[1..end].Trim();
+                    if (!result.ContainsKey(current))
+                        result[current] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    line = line[(end + 1)..].Trim();
+                    if (line.Length == 0) break;
+                }
+                if (line.Length == 0) continue;
+
+                var eq = line.IndexOf('=');
+                if (eq > 0 && !string.IsNullOrEmpty(current))
+                {
+                    var key = line[..eq].Trim();
+                    var val = line[(eq + 1)..].Trim();
+                    if (!result.ContainsKey(current))
+                        result[current] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    result[current][key] = val;
+                }
+            }
+            return result;
+        }
+
+        // ===================================================================
+        //   Composite-field editor overlay
+        //
+        // Each composite field (registry entries, env vars, firewall rules,
+        // etc.) is stored in the model as a pipe-separated string. In the UI
+        // we deserialize it into a List<string[]> for the duration of a
+        // Configurator session, edit through the overlay, and re-serialize
+        // on Collect. The seven schemas below describe the field layout of
+        // each composite.
+        // ===================================================================
+
+        private sealed class FieldDef
+        {
+            public string Label;
+            public string Placeholder;
+            public bool Mono;
+            public string[]? Options;      // ComboBox when non-null
+            public string Default;
+            public FieldDef(string label, string placeholder, bool mono = false, string[]? options = null, string @default = "")
+            {
+                Label = label; Placeholder = placeholder; Mono = mono; Options = options; Default = @default;
+            }
+        }
+
+        private sealed class CompositeSchema
+        {
+            public string Key;               // "RegistryEntries"
+            public string Title;             // "Registry entries"
+            public string Subject;           // "entry" (used in "+ Add entry")
+            public string Description;       // one-line explainer under the overlay title
+            public FieldDef[] Fields;
+            public Func<ConfigModel, string> Read;
+            public Action<ConfigModel, string> Write;
+            public TextBlock? SummaryLabel;
+            public CheckBox? EnabledCheckbox;
+            public CompositeSchema(string key, string title, string subject, string description,
+                FieldDef[] fields, Func<ConfigModel, string> read, Action<ConfigModel, string> write)
+            {
+                Key = key; Title = title; Subject = subject; Description = description;
+                Fields = fields; Read = read; Write = write;
+            }
+        }
+
+        private readonly Dictionary<string, CompositeSchema> _schemas = new();
+        private readonly Dictionary<string, List<string[]>> _composites = new();
+        private string? _openComposite;
+        private int _selectedEntryIdx;
+
+        private void InitCompositeSchemas()
+        {
+            _schemas["TestFiles"] = new CompositeSchema(
+                "TestFiles", "Test files", "file",
+                "Marker files the installer writes so packaging tools can verify file-system capture. Path supports %InstallDir%, %ProgramData%, %AppData% and friends.",
+                new[] {
+                    new FieldDef("PATH",    @"e.g. %InstallDir%\marker.txt", mono: true),
+                    new FieldDef("CONTENT", "Optional marker text"),
+                },
+                m => m.TestFiles, (m, s) => m.TestFiles = s);
+
+            _schemas["RegistryEntries"] = new CompositeSchema(
+                "RegistryEntries", "Registry entries", "entry",
+                "Values the installer writes to HKCU or HKLM. Type-strict; installers on non-admin contexts will silently skip HKLM entries.",
+                new[] {
+                    new FieldDef("KEY PATH",   @"HKCU\Software\Publisher\App", mono: true),
+                    new FieldDef("VALUE NAME", "e.g. InstallDate"),
+                    new FieldDef("TYPE",       "", options: new[] { "REG_SZ", "REG_DWORD", "REG_EXPAND_SZ", "REG_MULTI_SZ" }, @default: "REG_SZ"),
+                    new FieldDef("DATA",       "e.g. %DATE% or 1"),
+                },
+                m => m.RegistryEntries, (m, s) => m.RegistryEntries = s);
+
+            _schemas["FileAssociations"] = new CompositeSchema(
+                "FileAssociations", "File associations", "association",
+                "Extensions the installer registers as owned by this app. Icon may be a path with optional \",N\" index.",
+                new[] {
+                    new FieldDef("EXTENSION",   ".tpkg"),
+                    new FieldDef("PROGID",      "MyApp.Document"),
+                    new FieldDef("DESCRIPTION", "MyApp Document"),
+                    new FieldDef("ICON PATH",   @"%InstallDir%\app.exe,0", mono: true),
+                },
+                m => m.FileAssociations, (m, s) => m.FileAssociations = s);
+
+            _schemas["ContextMenuEntries"] = new CompositeSchema(
+                "ContextMenuEntries", "Context menu entries", "entry",
+                "Right-click actions registered under a file type or the Directory target. Command receives \"%1\".",
+                new[] {
+                    new FieldDef("TARGET",    "* or .ext or Directory"),
+                    new FieldDef("MENU TEXT", "Open with MyApp"),
+                    new FieldDef("COMMAND",   @"""%InstallDir%\app.exe"" ""%1""", mono: true),
+                },
+                m => m.ContextMenuEntries, (m, s) => m.ContextMenuEntries = s);
+
+            _schemas["EnvironmentVariables"] = new CompositeSchema(
+                "EnvironmentVariables", "Environment variables", "variable",
+                "User or System environment variables the installer sets.",
+                new[] {
+                    new FieldDef("SCOPE", "", options: new[] { "User", "System" }, @default: "User"),
+                    new FieldDef("NAME",  "MY_APP_HOME"),
+                    new FieldDef("VALUE", "%InstallDir%"),
+                },
+                m => m.EnvironmentVariables, (m, s) => m.EnvironmentVariables = s);
+
+            _schemas["FirewallRules"] = new CompositeSchema(
+                "FirewallRules", "Firewall rules", "rule",
+                "Windows Firewall rules the installer adds. Requires elevation at install-time.",
+                new[] {
+                    new FieldDef("RULE NAME", "My app inbound"),
+                    new FieldDef("DIRECTION", "", options: new[] { "In", "Out" }, @default: "In"),
+                    new FieldDef("ACTION",    "", options: new[] { "Allow", "Block" }, @default: "Allow"),
+                    new FieldDef("PROTOCOL",  "", options: new[] { "TCP", "UDP" }, @default: "TCP"),
+                    new FieldDef("PORT",      "19876"),
+                },
+                m => m.FirewallRules, (m, s) => m.FirewallRules = s);
+
+            _schemas["ProtocolHandlers"] = new CompositeSchema(
+                "ProtocolHandlers", "URI protocol handlers", "protocol",
+                "Custom URI schemes (e.g. myapp://) the installer registers.",
+                new[] {
+                    new FieldDef("PROTOCOL",    "myapp"),
+                    new FieldDef("DESCRIPTION", "MyApp Protocol Handler"),
+                },
+                m => m.ProtocolHandlers, (m, s) => m.ProtocolHandlers = s);
+
+            // Wire the summary labels + enabled checkboxes now that InitializeComponent has run.
+            _schemas["TestFiles"].SummaryLabel            = LblTestFilesSummary;
+            _schemas["TestFiles"].EnabledCheckbox         = ChkTestFilesEnabled;
+            _schemas["RegistryEntries"].SummaryLabel      = LblRegistrySummary;
+            _schemas["RegistryEntries"].EnabledCheckbox   = ChkRegistryEnabled;
+            _schemas["FileAssociations"].SummaryLabel     = LblFileAssociationsSummary;
+            _schemas["FileAssociations"].EnabledCheckbox  = ChkFileAssociations;
+            _schemas["ContextMenuEntries"].SummaryLabel   = LblContextMenuSummary;
+            _schemas["ContextMenuEntries"].EnabledCheckbox = ChkContextMenu;
+            _schemas["EnvironmentVariables"].SummaryLabel = LblEnvVarsSummary;
+            _schemas["EnvironmentVariables"].EnabledCheckbox = ChkEnvVars;
+            _schemas["FirewallRules"].SummaryLabel        = LblFirewallSummary;
+            _schemas["FirewallRules"].EnabledCheckbox     = ChkFirewall;
+            _schemas["ProtocolHandlers"].SummaryLabel     = LblProtocolHandlersSummary;
+            _schemas["ProtocolHandlers"].EnabledCheckbox  = ChkProtocolHandlers;
+        }
+
+        private void LoadCompositesFromModel(ConfigModel m)
+        {
+            foreach (var (key, schema) in _schemas)
+                _composites[key] = ParseComposite(schema.Read(m), schema.Fields.Length);
+        }
+
+        private void SaveCompositesToModel(ConfigModel m)
+        {
+            foreach (var (key, schema) in _schemas)
+            {
+                if (!_composites.TryGetValue(key, out var entries)) continue;
+                schema.Write(m, SerializeComposite(entries));
+            }
+        }
+
+        // Parse a pipe-separated composite string into entries of exactly
+        // fieldsPerEntry fields. Handles values containing commas (icon
+        // "app.exe,0") by rejoining at entry boundaries.
+        private static List<string[]> ParseComposite(string data, int fieldsPerEntry)
+        {
+            var result = new List<string[]>();
+            if (string.IsNullOrWhiteSpace(data)) return result;
+            var allParts = data.Split('|').Select(s => s.Trim()).ToArray();
+            var current = new List<string>();
+            foreach (var part in allParts)
+            {
+                if (current.Count == fieldsPerEntry - 1)
+                {
+                    var commaIdx = part.LastIndexOf(',');
+                    if (commaIdx > 0)
+                    {
+                        current.Add(part[..commaIdx].Trim());
+                        result.Add(current.ToArray());
+                        current = new List<string> { part[(commaIdx + 1)..].Trim() };
+                    }
+                    else
+                    {
+                        current.Add(part);
+                        result.Add(current.ToArray());
+                        current = new List<string>();
+                    }
+                }
+                else
+                {
+                    current.Add(part);
+                }
+            }
+            if (current.Count > 0) result.Add(current.ToArray());
+            return result.Where(e => e.Any(f => !string.IsNullOrEmpty(f))).ToList();
+        }
+
+        private static string SerializeComposite(List<string[]> entries)
+        {
+            var items = new List<string>();
+            foreach (var entry in entries)
+            {
+                var parts = entry.ToList();
+                while (parts.Count > 0 && string.IsNullOrEmpty(parts[^1])) parts.RemoveAt(parts.Count - 1);
+                if (parts.Any(p => !string.IsNullOrEmpty(p)))
+                    items.Add(string.Join("|", parts));
+            }
+            return string.Join(",", items);
+        }
+
+        private void UpdateCompositeSummaries()
+        {
+            foreach (var schema in _schemas.Values)
+            {
+                if (schema.SummaryLabel == null) continue;
+                var enabled = schema.EnabledCheckbox?.IsChecked == true;
+                var count = _composites.TryGetValue(schema.Key, out var list) ? list.Count : 0;
+                if (!enabled)
+                {
+                    schema.SummaryLabel.Text = count == 0 ? "off · no entries" : $"off · {count} entries";
+                }
+                else
+                {
+                    if (count == 0) schema.SummaryLabel.Text = "no entries yet";
+                    else
+                    {
+                        // First-entry preview: the first field trimmed to something
+                        // that scans in a single-line receipt.
+                        var first = list![0].ElementAtOrDefault(0) ?? "";
+                        var preview = first.Length > 48 ? first[..45] + "…" : first;
+                        schema.SummaryLabel.Text = count == 1
+                            ? preview
+                            : $"{count} entries · {preview}";
+                    }
+                }
+            }
+        }
+
+        // ----- Overlay open / close / add / remove -----
+
+        private void OpenComposite_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button b || b.Tag is not string key) return;
+            if (!_schemas.TryGetValue(key, out var schema)) return;
+
+            _openComposite = key;
+            LblOverlayTitle.Text = schema.Title;
+            LblOverlaySubtitle.Text = schema.Description;
+            _selectedEntryIdx = _composites[key].Count > 0 ? 0 : -1;
+            RebuildMasterList();
+            BuildDetailForm();
+            CompositeOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void CompositeOverlay_Close(object sender, RoutedEventArgs e) => CloseOverlay();
+        private void CompositeOverlay_ScrimClick(object sender, MouseButtonEventArgs e) => CloseOverlay();
+
+        private void CloseOverlay()
+        {
+            _openComposite = null;
+            CompositeOverlay.Visibility = Visibility.Collapsed;
+            OverlayMasterList.Children.Clear();
+            OverlayDetailForm.Children.Clear();
+        }
+
+        private void CompositeOverlay_Add(object sender, RoutedEventArgs e)
+        {
+            if (_openComposite is null) return;
+            var schema = _schemas[_openComposite];
+            var blank = schema.Fields.Select(f => f.Default).ToArray();
+            _composites[_openComposite].Add(blank);
+            _selectedEntryIdx = _composites[_openComposite].Count - 1;
+            RebuildMasterList();
+            BuildDetailForm();
+            // Focus the first field
+            if (OverlayDetailForm.Children.Count > 0
+                && FindFirstEditable(OverlayDetailForm.Children[0]) is Control ctrl)
+                ctrl.Focus();
+        }
+
+        private static UIElement? FindFirstEditable(UIElement element)
+        {
+            // UIElementCollection is non-generic (yields object); type the loop
+            // variable so the return value is the required UIElement.
+            if (element is StackPanel sp)
+            {
+                foreach (UIElement c in sp.Children)
+                    if (c is TextBox || c is ComboBox) return c;
+            }
+            return null;
+        }
+
+        private void CompositeOverlay_Remove(object sender, RoutedEventArgs e)
+        {
+            if (_openComposite is null || _selectedEntryIdx < 0) return;
+            var entries = _composites[_openComposite];
+            if (_selectedEntryIdx >= entries.Count) return;
+            entries.RemoveAt(_selectedEntryIdx);
+            if (_selectedEntryIdx >= entries.Count) _selectedEntryIdx = entries.Count - 1;
+            RebuildMasterList();
+            BuildDetailForm();
+        }
+
+        private void RebuildMasterList()
+        {
+            OverlayMasterList.Children.Clear();
+            if (_openComposite is null) return;
+            var schema = _schemas[_openComposite];
+            var entries = _composites[_openComposite];
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var idx = i;   // capture
+                var entry = entries[i];
+                var isSelected = i == _selectedEntryIdx;
+
+                var btn = new Button();
+                btn.SetResourceReference(StyleProperty, "MasterListRow");
+                btn.BorderBrush = isSelected ? (Brush)FindResource("AccentBrush") : Brushes.Transparent;
+                btn.Background = isSelected ? (Brush)FindResource("AccentTintBrush") : Brushes.Transparent;
+
+                var stack = new StackPanel();
+
+                var first = string.IsNullOrWhiteSpace(entry.ElementAtOrDefault(0))
+                    ? "(new " + schema.Subject + ")"
+                    : entry[0];
+                stack.Children.Add(new TextBlock
+                {
+                    Text = first,
+                    FontFamily = (FontFamily)FindResource("MonoFont"),
+                    FontSize = 13,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = (Brush)FindResource("InkBrush"),
+                    TextTrimming = TextTrimming.CharacterEllipsis
+                });
+
+                var rest = string.Join(" · ",
+                    entry.Skip(1).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x));
+                if (!string.IsNullOrEmpty(rest))
+                {
+                    stack.Children.Add(new TextBlock
+                    {
+                        Text = rest,
+                        FontFamily = (FontFamily)FindResource("BodyFont"),
+                        FontSize = 11,
+                        Foreground = (Brush)FindResource("InkMutedBrush"),
+                        TextTrimming = TextTrimming.CharacterEllipsis,
+                        Margin = new Thickness(0, 2, 0, 0)
+                    });
+                }
+                btn.Content = stack;
+                btn.Click += (_, _) => { _selectedEntryIdx = idx; RebuildMasterList(); BuildDetailForm(); };
+                OverlayMasterList.Children.Add(btn);
+            }
+
+            if (entries.Count == 0)
+            {
+                OverlayMasterList.Children.Add(new TextBlock
+                {
+                    Text = "No " + schema.Subject + " entries yet.\nUse + Add entry below.",
+                    FontFamily = (FontFamily)FindResource("BodyFont"),
+                    FontSize = 12,
+                    Foreground = (Brush)FindResource("InkFaintBrush"),
+                    Margin = new Thickness(16, 24, 16, 0),
+                    TextWrapping = TextWrapping.Wrap
+                });
+            }
+        }
+
+        private void BuildDetailForm()
+        {
+            OverlayDetailForm.Children.Clear();
+            if (_openComposite is null)
+            {
+                BtnOverlayRemove.IsEnabled = false;
+                return;
+            }
+            var schema = _schemas[_openComposite];
+            var entries = _composites[_openComposite];
+            if (_selectedEntryIdx < 0 || _selectedEntryIdx >= entries.Count)
+            {
+                BtnOverlayRemove.IsEnabled = false;
+                OverlayDetailForm.Children.Add(new TextBlock
+                {
+                    Text = "Select an entry from the list to edit, or add a new one.",
+                    FontFamily = (FontFamily)FindResource("BodyFont"),
+                    FontSize = 12,
+                    Foreground = (Brush)FindResource("InkFaintBrush"),
+                    Margin = new Thickness(0, 12, 0, 0),
+                    TextWrapping = TextWrapping.Wrap
+                });
+                return;
+            }
+
+            BtnOverlayRemove.IsEnabled = true;
+            var entry = entries[_selectedEntryIdx];
+
+            for (int i = 0; i < schema.Fields.Length; i++)
+            {
+                var fieldDef = schema.Fields[i];
+                var fieldIdx = i;
+
+                OverlayDetailForm.Children.Add(new TextBlock
+                {
+                    Text = fieldDef.Label,
+                    Style = (Style)FindResource("FieldLabel")
+                });
+
+                var value = entry.ElementAtOrDefault(i) ?? "";
+
+                if (fieldDef.Options is { } opts)
+                {
+                    var cb = new ComboBox();
+                    cb.SetResourceReference(StyleProperty, "ModernComboBox");
+                    cb.Width = 220;
+                    cb.HorizontalAlignment = HorizontalAlignment.Left;
+                    foreach (var o in opts) cb.Items.Add(new ComboBoxItem { Content = o });
+                    var initial = string.IsNullOrEmpty(value) ? fieldDef.Default : value;
+                    foreach (ComboBoxItem it in cb.Items)
+                        if (it.Content?.ToString() == initial) { it.IsSelected = true; break; }
+                    cb.SelectionChanged += (_, _) =>
+                    {
+                        var arr = entries[_selectedEntryIdx];
+                        EnsureLength(ref arr, schema.Fields.Length);
+                        arr[fieldIdx] = (cb.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "";
+                        entries[_selectedEntryIdx] = arr;
+                        RefreshSelectedMasterRow();
+                    };
+                    OverlayDetailForm.Children.Add(cb);
+                }
+                else
+                {
+                    var tb = new TextBox { Text = value };
+                    tb.SetResourceReference(StyleProperty, fieldDef.Mono ? "MonoTextBox" : "FieldTextBox");
+                    tb.LostFocus += (_, _) =>
+                    {
+                        var arr = entries[_selectedEntryIdx];
+                        EnsureLength(ref arr, schema.Fields.Length);
+                        arr[fieldIdx] = tb.Text.Trim();
+                        entries[_selectedEntryIdx] = arr;
+                        RefreshSelectedMasterRow();
+                    };
+                    tb.KeyDown += (_, ev) =>
+                    {
+                        if (ev.Key == Key.Enter)
+                        {
+                            var arr = entries[_selectedEntryIdx];
+                            EnsureLength(ref arr, schema.Fields.Length);
+                            arr[fieldIdx] = tb.Text.Trim();
+                            entries[_selectedEntryIdx] = arr;
+                            RefreshSelectedMasterRow();
+                            ev.Handled = true;
+                        }
+                    };
+                    OverlayDetailForm.Children.Add(tb);
+                }
+
+                if (!string.IsNullOrEmpty(fieldDef.Placeholder))
+                {
+                    OverlayDetailForm.Children.Add(new TextBlock
+                    {
+                        Text = fieldDef.Placeholder,
+                        Style = (Style)FindResource("MutedText"),
+                        Margin = new Thickness(0, 2, 0, 0)
+                    });
+                }
+            }
+        }
+
+        private static void EnsureLength(ref string[] arr, int len)
+        {
+            if (arr.Length >= len) return;
+            var padded = new string[len];
+            Array.Copy(arr, padded, arr.Length);
+            for (int i = arr.Length; i < len; i++) padded[i] = "";
+            arr = padded;
+        }
+
+        private void RefreshSelectedMasterRow()
+        {
+            // Cheap way to keep the master list in sync: rebuild it.
+            RebuildMasterList();
         }
     }
 }

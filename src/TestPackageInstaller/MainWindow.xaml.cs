@@ -231,12 +231,31 @@ namespace TestPackageInstaller
                 return;
             }
 
+            var installDir = InstallPath.Text.Trim();
+            var context = ContextMachine.IsChecked == true ? "Machine" : "User";
+
+            // Elevation pre-check: writing to Program Files / Windows / ProgramData
+            // needs admin. If we're not elevated, offer to re-launch as admin
+            // before wasting the user's time walking to a mid-install failure.
+            if (!IsRunningAsAdmin() && PathRequiresAdmin(installDir))
+            {
+                var choice = MessageBox.Show(
+                    "The chosen install directory needs administrator privileges:\n\n" +
+                    installDir + "\n\n" +
+                    "Restart the installer as administrator?\n\n" +
+                    "Yes: relaunch with a UAC prompt.\n" +
+                    "No:  cancel this install so you can pick a per-user location.",
+                    "TestPackage Setup", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (choice == MessageBoxResult.Yes)
+                {
+                    TryRelaunchElevated();
+                }
+                return;
+            }
+
             // Move to Installing page
             var installPageIndex = _pages.IndexOf(InstallingPage);
             ShowPage(installPageIndex);
-
-            var installDir = InstallPath.Text.Trim();
-            var context = ContextMachine.IsChecked == true ? "Machine" : "User";
 
             var selectedComponents = new List<string>();
             foreach (CheckBox cb in ComponentsList.Children)
@@ -253,6 +272,9 @@ namespace TestPackageInstaller
 
             var delay = _config.GetInt("UI", "InstallDelayMs", 500);
             var simulate = _config.GetBool("UI", "SimulateInstallDelay", true);
+
+            var installSucceeded = false;
+            string? installError = null;
 
             await Task.Run(async () =>
             {
@@ -290,6 +312,7 @@ namespace TestPackageInstaller
                         step.action();
                     }
 
+                    installSucceeded = true;
                     Dispatcher.Invoke(() =>
                     {
                         InstallProgress.Value = 100;
@@ -298,19 +321,45 @@ namespace TestPackageInstaller
                 }
                 catch (Exception ex)
                 {
+                    installError = ex.Message;
                     Dispatcher.Invoke(() =>
                     {
                         LogMessage($"ERROR: {ex.Message}");
                         InstallStatus.Text = "Installation failed!";
-                        MessageBox.Show($"Installation failed:\n{ex.Message}",
-                            "TestPackage Setup", MessageBoxButton.OK, MessageBoxImage.Error);
                     });
-                    return;
                 }
             });
 
-            // Build summary
-            var manifest = _installer.Manifest;
+            if (!installSucceeded)
+            {
+                // Stay on the Installing page so the log is visible. Show the
+                // error, and offer to re-launch elevated when the failure looks
+                // like an access-denied on an admin-only path.
+                var msg = "Installation failed:\n" + (installError ?? "unknown error");
+                var offersElevation = !IsRunningAsAdmin()
+                    && (installError?.Contains("Access to the path", StringComparison.OrdinalIgnoreCase) == true
+                        || installError?.Contains("Access is denied", StringComparison.OrdinalIgnoreCase) == true
+                        || PathRequiresAdmin(installDir));
+                if (offersElevation)
+                {
+                    var choice = MessageBox.Show(
+                        msg + "\n\nThis usually means administrator privileges are needed.\n\nRelaunch the installer as administrator?",
+                        "TestPackage Setup", MessageBoxButton.YesNo, MessageBoxImage.Error);
+                    if (choice == MessageBoxResult.Yes) TryRelaunchElevated();
+                }
+                else
+                {
+                    MessageBox.Show(msg, "TestPackage Setup", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                // Enable Cancel again so the user can close cleanly, and offer
+                // to jump back to the earlier pages.
+                BtnCancel.Visibility = Visibility.Visible;
+                BtnBack.Visibility = _pages.IndexOf(OptionsPage) >= 0 ? Visibility.Visible : Visibility.Collapsed;
+                return;
+            }
+
+            // Build summary — only on genuine success.
+            var manifest = _installer!.Manifest;
             SummaryText.Text = $"Installed to: {manifest.InstallDir}\n" +
                               $"Context: {manifest.InstallContext}\n" +
                               $"Components: {string.Join(", ", manifest.Components)}\n" +
@@ -319,6 +368,66 @@ namespace TestPackageInstaller
                               $"Shortcuts: {manifest.Shortcuts.Count}";
 
             ShowPage(_pages.IndexOf(CompletePage));
+        }
+
+        // ----- Elevation helpers -----
+
+        private static bool IsRunningAsAdmin()
+        {
+            try
+            {
+                using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+                var principal = new System.Security.Principal.WindowsPrincipal(identity);
+                return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+            }
+            catch { return false; }
+        }
+
+        private static bool PathRequiresAdmin(string path)
+        {
+            try
+            {
+                var expanded = Environment.ExpandEnvironmentVariables(path ?? "");
+                var full = System.IO.Path.GetFullPath(expanded);
+                string[] adminRoots =
+                {
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                    Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                    Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                };
+                foreach (var root in adminRoots)
+                {
+                    if (!string.IsNullOrEmpty(root)
+                        && full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+                return false;
+            }
+            catch { return false; }
+        }
+
+        private void TryRelaunchElevated()
+        {
+            try
+            {
+                var exe = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
+                if (string.IsNullOrEmpty(exe)) return;
+                var psi = new ProcessStartInfo
+                {
+                    FileName = exe,
+                    Verb = "runas",
+                    UseShellExecute = true
+                };
+                Process.Start(psi);
+                Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Could not relaunch as administrator:\n" + ex.Message,
+                    "TestPackage Setup", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private void Finish_Click(object sender, RoutedEventArgs e)

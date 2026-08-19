@@ -7,6 +7,15 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+defaults:
+  run:
+    # Fail fast: every step's multi-command pwsh block aborts on any error,
+    # including native-command exit codes (dotnet publish, xcopy, makensis...).
+    # Without this a compile error followed by a successful xcopy leaves the
+    # step "green" and the next step blows up with a cryptic missing-file
+    # error — see PR notes on v3.0.0-alpha.3.
+    shell: pwsh
+
 jobs:
   build:
     runs-on: windows-latest
@@ -21,21 +30,31 @@ jobs:
 
     - name: Build templates (Framework-dependent)
       run: |
+        $ErrorActionPreference = 'Stop'
         dotnet publish src\TestPackageApp\TestPackageApp.csproj -c Release -r win-x64 --self-contained false -o dist\framework-dependent\templates
+        if ($LASTEXITCODE) { exit 1 }
         dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c Release -r win-x64 --self-contained false -o dist\framework-dependent\templates
+        if ($LASTEXITCODE) { exit 1 }
         copy config.ini dist\framework-dependent\templates\config.ini
+        if ($LASTEXITCODE) { exit 1 }
 
     - name: Build Configurator (Framework-dependent)
       run: |
+        $ErrorActionPreference = 'Stop'
         dotnet publish src\TestPackage.Configurator\TestPackage.Configurator.csproj -c Release -r win-x64 --self-contained false -o dist\framework-dependent\configurator
+        if ($LASTEXITCODE) { exit 1 }
         xcopy dist\framework-dependent\templates dist\framework-dependent\configurator\templates\ /E /I /Y
+        if ($LASTEXITCODE) { exit 1 }
 
     - name: Build and run smoke test
       run: |
+        $ErrorActionPreference = 'Stop'
         dotnet publish src\TestPackageSmokeTest\TestPackageSmokeTest.csproj -c Release -r win-x64 --self-contained false -o dist\smoketest
+        if ($LASTEXITCODE) { exit 1 }
         copy config.ini dist\smoketest\config.ini
+        if ($LASTEXITCODE) { exit 1 }
         dist\smoketest\TestPackageSmokeTest.exe 2>&1 | tee dist\smoke-test-output.txt
-        if ($LASTEXITCODE -ne 0) { exit 1 }
+        if ($LASTEXITCODE) { exit 1 }
 
     - name: Upload smoke test results
       uses: actions/upload-artifact@v4
@@ -46,19 +65,29 @@ jobs:
 
     - name: Build templates (Self-contained)
       run: |
+        $ErrorActionPreference = 'Stop'
         dotnet publish src\TestPackageApp\TestPackageApp.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained\templates
+        if ($LASTEXITCODE) { exit 1 }
         dotnet publish src\TestPackageInstaller\TestPackageInstaller.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained\templates
+        if ($LASTEXITCODE) { exit 1 }
         copy config.ini dist\self-contained\templates\config.ini
+        if ($LASTEXITCODE) { exit 1 }
 
     - name: Build Configurator (Self-contained)
       run: |
+        $ErrorActionPreference = 'Stop'
         dotnet publish src\TestPackage.Configurator\TestPackage.Configurator.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained\configurator
+        if ($LASTEXITCODE) { exit 1 }
         xcopy dist\self-contained\templates dist\self-contained\configurator\templates\ /E /I /Y
+        if ($LASTEXITCODE) { exit 1 }
 
     - name: Build NSIS installer
       run: |
+        $ErrorActionPreference = 'Stop'
         choco install nsis -y --no-progress
+        if ($LASTEXITCODE) { exit 1 }
         & "${env:ProgramFiles(x86)}\NSIS\makensis.exe" installer\test-package-setup.nsi
+        if ($LASTEXITCODE) { exit 1 }
 
     - name: Upload Configurator Build
       uses: actions/upload-artifact@v4
