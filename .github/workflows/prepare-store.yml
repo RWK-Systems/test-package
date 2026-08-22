@@ -1,0 +1,89 @@
+name: Prepare Microsoft Store submission
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable GitHub release version, without the v prefix (for example 2.5.1)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: windows-latest
+    env:
+      VERSION: ${{ inputs.version }}
+      INSTALLER_URL: https://github.com/${{ github.repository }}/releases/download/v${{ inputs.version }}/TestPackageSetup.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate version and release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ($env:VERSION -notmatch '^\d+\.\d+\.\d+(\.\d+)?$') {
+            throw "Version must contain three or four numeric components."
+          }
+          $release = gh api "repos/${{ github.repository }}/releases/tags/v$env:VERSION" | ConvertFrom-Json
+          if ($release.draft -or $release.prerelease) {
+            throw "Microsoft Store submissions must use a published, stable release."
+          }
+          $asset = $release.assets | Where-Object name -eq 'TestPackageSetup.exe'
+          if (-not $asset) {
+            throw "Release v$env:VERSION does not contain TestPackageSetup.exe."
+          }
+
+      - name: Download immutable release installer
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path store-bundle -Force | Out-Null
+          Invoke-WebRequest -Uri $env:INSTALLER_URL -OutFile store-bundle\TestPackageSetup.exe
+
+      - name: Verify Authenticode signature
+        shell: pwsh
+        run: |
+          $signature = Get-AuthenticodeSignature store-bundle\TestPackageSetup.exe
+          if ($signature.Status -ne 'Valid') {
+            throw "Installer signature is $($signature.Status), expected Valid."
+          }
+          $signature.SignerCertificate.Subject | Set-Content store-bundle\signer-subject.txt
+
+      - name: Test silent install and uninstall
+        shell: pwsh
+        run: |
+          $installer = (Resolve-Path store-bundle\TestPackageSetup.exe).Path
+          $install = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "Silent install returned $($install.ExitCode)." }
+          $uninstaller = Join-Path $env:ProgramFiles 'RWK Systems\TestPackage\uninstall.exe'
+          if (-not (Test-Path $uninstaller)) { throw "The expected uninstaller was not created." }
+          $uninstall = Start-Process -FilePath $uninstaller -ArgumentList '/S' -Wait -PassThru
+          if ($uninstall.ExitCode -ne 0) { throw "Silent uninstall returned $($uninstall.ExitCode)." }
+
+      - name: Assemble Partner Center bundle
+        shell: pwsh
+        run: |
+          Copy-Item store\submission.json, store\listing-en-US.md, assets\icon.png store-bundle\
+          $record = [ordered]@{
+            version = $env:VERSION
+            installerUrl = $env:INSTALLER_URL
+            sha256 = (Get-FileHash store-bundle\TestPackageSetup.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+            sizeBytes = (Get-Item store-bundle\TestPackageSetup.exe).Length
+            signature = 'Valid'
+            silentInstallCommand = 'TestPackageSetup.exe /S'
+            successReturnCode = 0
+            preparedAtUtc = (Get-Date).ToUniversalTime().ToString('o')
+          }
+          $record | ConvertTo-Json | Set-Content store-bundle\release.json
+
+      - name: Upload submission bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: microsoft-store-v${{ inputs.version }}
+          path: store-bundle
+          if-no-files-found: error
+          retention-days: 30
